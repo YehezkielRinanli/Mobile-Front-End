@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'screens/splash_screen.dart';
+
+import 'features/notification/screens/notification_screen.dart';
+
+// import 'features/checkout/screens/checkout_screen.dart'; // Mengimpor layar checkout yang sudah dibuat
 
 void main() {
   runApp(const CraftOriginApp());
@@ -19,7 +22,7 @@ class CraftOriginApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'Roboto', // Bisa diganti jika nanti ada custom font
       ),
-      home: const SplashScreen(),
+      home: const NotificationScreen(), // Mengarahkan ke layar checkout untuk saat ini
     );
   }
 }
