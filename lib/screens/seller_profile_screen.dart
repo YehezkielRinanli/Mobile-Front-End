@@ -1,0 +1,217 @@
+import 'package:flutter/material.dart';
+
+import '../models/seller.dart';
+import '../theme/app_colors.dart';
+import '../utils/formatters.dart';
+import '../widgets/info_chip.dart';
+import '../widgets/product_grid.dart';
+import '../widgets/product_grid_card.dart';
+import '../widgets/seller_header_card.dart';
+
+class SellerProfileScreen extends StatefulWidget {
+  final Seller seller;
+
+  // Sementara memakai data contoh. Nanti halaman produk mengirim
+  // data penjual yang sesuai lewat: SellerProfileScreen(seller: dataPenjual)
+  const SellerProfileScreen({super.key, this.seller = dummySeller});
+
+  @override
+  State<SellerProfileScreen> createState() => _SellerProfileScreenState();
+}
+
+class _SellerProfileScreenState extends State<SellerProfileScreen> {
+  bool _isFollowing = false;
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _sendEmail() {
+    // TODO: Buka aplikasi email (butuh package url_launcher, skema mailto:)
+    _showMessage('Fitur email belum tersambung');
+  }
+
+  void _callSeller() {
+    // TODO: Buka aplikasi telepon (butuh package url_launcher)
+    _showMessage('Fitur telepon belum tersambung');
+  }
+
+  void _openProduct(SellerProduct product) {
+    // TODO: Pindah ke halaman detail produk (dikerjakan teman satu tim), misal:
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (_) => ProductDetailScreen(productId: product.id),
+    //   ),
+    // );
+    _showMessage('Detail "${product.name}" belum tersedia');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final seller = widget.seller;
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: _buildAppBar(),
+      body: SafeArea(
+        top: false, // Bagian atas sudah ditangani AppBar
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SellerHeaderCard(
+                seller: seller,
+                isFollowing: _isFollowing,
+                onFollowTap: () => setState(() => _isFollowing = !_isFollowing),
+                onEmailTap: _sendEmail,
+                onPhoneTap: _callSeller,
+              ),
+              const SizedBox(height: 12),
+              _buildBadges(seller),
+              const SizedBox(height: 20),
+              _buildStory(seller),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Divider(height: 1, color: Color(0xFFE0DBCF)),
+              ),
+              _buildCatalog(seller),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- Ekstraksi method agar build() tetap rapi ---
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: AppColors.primaryGreen,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      automaticallyImplyLeading: false,
+      leadingWidth: 64,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 16),
+        child: Center(
+          child: Material(
+            color: AppColors.cream,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () => Navigator.maybePop(context),
+              child: const SizedBox(
+                width: 36,
+                height: 36,
+                child: Icon(
+                  Icons.chevron_left,
+                  size: 24,
+                  color: AppColors.primaryGreen,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      centerTitle: true,
+      title: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.account_circle, color: AppColors.cream, size: 28),
+          SizedBox(width: 8),
+          Text(
+            'Profil Perajin',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: AppColors.cream,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBadges(Seller seller) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        InfoChip(
+          icon: Icons.star,
+          iconColor: AppColors.star,
+          label:
+              '${seller.rating.toStringAsFixed(1)} Rating Toko '
+              '(${formatCount(seller.reviewCount)} Ulasan)',
+        ),
+        if (seller.isTrusted)
+          const InfoChip(
+            icon: Icons.verified_user,
+            label: 'Penjual Terpercaya',
+          ),
+      ],
+    );
+  }
+
+  Widget _buildStory(Seller seller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Cerita di Balik Karya',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          seller.story,
+          style: const TextStyle(
+            fontSize: 14,
+            height: 1.5,
+            color: Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCatalog(Seller seller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Katalog Produk ${seller.shopName}',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ProductGrid(
+          itemCount: seller.products.length,
+          itemBuilder: (context, index) {
+            final product = seller.products[index];
+            return ProductGridCard(
+              name: product.name,
+              price: product.price,
+              image: product.image,
+              rating: product.rating,
+              reviewCount: product.reviewCount,
+              location: product.location,
+              onTap: () => _openProduct(product),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
