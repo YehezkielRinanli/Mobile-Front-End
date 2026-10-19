@@ -9,8 +9,10 @@ String formatRupiah(int value) {
   return 'Rp $buffer';
 }
 
-/// 1200 -> "1.2k", 85 -> "85"
 String formatCount(int count) {
-  if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}k';
+  if (count >= 1000) {
+    final text = (count / 1000).toStringAsFixed(1).replaceAll('.', ',');
+    return '${text.replaceAll(',0', '')} rb';
+  }
   return '$count';
 }

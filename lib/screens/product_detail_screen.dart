@@ -47,6 +47,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
+  /// Fungsi pembantu untuk mencari seller berdasarkan ID dari dummySellers
+  Seller? _findSellerById(String sellerId) {
+    try {
+      return dummySellers.firstWhere((s) => s.id == sellerId);
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final product = findProductById(widget.productId);
@@ -167,7 +176,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
         itemCount: photos.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
         itemBuilder: (context, i) {
           final isSelected = i == selected;
           return GestureDetector(
@@ -278,7 +287,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   /// Kalau id-nya belum ada di sana, dipakai data cadangan di Product
   /// (inisial nama, tanpa tombol Lihat Profil).
   Widget _buildSellerInfo(Product product) {
-    final seller = findSellerById(product.sellerId);
+    final seller = _findSellerById(product.sellerId);
     final name = seller?.name ?? product.sellerName;
     final subtitle = seller?.shopName ?? product.sellerRole;
 
@@ -368,7 +377,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 child: SizedBox(
                   height: 52,
                   child: ElevatedButton.icon(
-                    // TODO: sambungkan ke keranjang (alur checkout milik Aulia).
                     onPressed: () => _showMessage(
                       '"${product.name}" ditambahkan ke keranjang',
                     ),
