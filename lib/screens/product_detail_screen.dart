@@ -8,15 +8,9 @@ import '../utils/formatters.dart';
 import '../widgets/app_image.dart';
 import '../widgets/eco_badge.dart';
 import '../widgets/info_chip.dart';
-import '../widgets/pill_button.dart';
 import 'seller_profile_screen.dart';
 
-const Color _text = Colors.black87;
-const Color _muted = Color(0xFF6B756F);
-const Color _line = Color(0xFFE0DBCF);
-
-/// Halaman detail produk. Dipanggil dengan id produk, sesuai TODO di
-/// seller_profile_screen.dart:
+/// Halaman detail produk. Dipanggil dengan id produk:
 /// ProductDetailScreen(productId: product.id)
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -47,6 +41,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
+  void _openProduct(Product product) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ProductDetailScreen(productId: product.id),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final product = findProductById(widget.productId);
@@ -58,6 +60,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       );
     }
 
+    final seller = findSellerById(product.sellerId);
     final photos = product.photos;
     final index = _photoIndex < photos.length ? _photoIndex : 0;
 
@@ -70,84 +73,94 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(context, photos, index),
+                  _buildHeader(photos, index),
                   if (photos.length > 1) _buildThumbnails(photos, index),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                    child: _buildBody(product),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                    child: _buildBody(context, product, seller),
                   ),
                 ],
               ),
             ),
           ),
-          _buildBottomBar(product),
+          _buildBottomBar(context, product),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, List<String> photos, int index) {
+  // ---------------------------------------------------------------- HEADER
+
+  Widget _buildHeader(List<String> photos, int index) {
+    final cs = Theme.of(context).colorScheme;
+
     return SafeArea(
       bottom: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           child: AspectRatio(
             aspectRatio: 1.1,
             child: Stack(
               fit: StackFit.expand,
               children: [
                 AppImage(path: photos[index]),
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: _CircleButton(
-                    icon: Icons.arrow_back,
-                    label: 'Kembali',
-                    onTap: () => Navigator.of(context).maybePop(),
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: _CircleButton(
+                      icon: Icons.arrow_back,
+                      label: 'Kembali',
+                      onTap: () => Navigator.of(context).maybePop(),
+                    ),
                   ),
                 ),
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Row(
-                    children: [
-                      _CircleButton(
-                        icon: Icons.share_outlined,
-                        label: 'Bagikan',
-                        onTap: () =>
-                            _showMessage('Fitur bagikan belum tersedia'),
-                      ),
-                      const SizedBox(width: 8),
-                      _CircleButton(
-                        icon:
-                            _favorite ? Icons.favorite : Icons.favorite_border,
-                        label: 'Favorit',
-                        color: _favorite ? Colors.red : _text,
-                        onTap: _toggleFavorite,
-                      ),
-                    ],
+                Align(
+                  alignment: Alignment.topRight,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _CircleButton(
+                          icon: Icons.share_outlined,
+                          label: 'Bagikan',
+                          onTap: () =>
+                              _showMessage('Fitur bagikan belum tersedia'),
+                        ),
+                        const SizedBox(width: 8),
+                        _CircleButton(
+                          icon: _favorite
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          label: 'Favorit',
+                          color: _favorite ? cs.error : cs.onSurface,
+                          onTap: _toggleFavorite,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 if (photos.length > 1)
-                  Positioned(
-                    right: 12,
-                    bottom: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0x99000000),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${index + 1}/${photos.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
+                  Align(
+                    alignment: Alignment.bottomRight,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${index + 1}/${photos.length}',
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(color: Colors.white),
                         ),
                       ),
                     ),
@@ -195,23 +208,32 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildBody(Product product) {
+  // ------------------------------------------------------------------ BODY
+
+  Widget _buildBody(BuildContext context, Product product, Seller? seller) {
+    final text = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+
+    final otherProducts = sampleProducts
+        .where((p) => p.sellerId == product.sellerId && p.id != product.id)
+        .take(8)
+        .toList();
+    final shopLabel = seller?.shopName ?? product.sellerName;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           product.name,
-          style: const TextStyle(
-            fontSize: 22,
+          style: text.headlineSmall?.copyWith(
             fontWeight: FontWeight.w800,
-            color: _text,
+            color: cs.onSurface,
           ),
         ),
         const SizedBox(height: 6),
         Text(
           formatRupiah(product.price),
-          style: const TextStyle(
-            fontSize: 20,
+          style: text.titleLarge?.copyWith(
             fontWeight: FontWeight.w700,
             color: AppColors.primaryGreen,
           ),
@@ -236,108 +258,86 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             if (product.isEcoFriendly) const EcoBadge(),
           ],
         ),
-        const _SectionDivider(),
+        const SizedBox(height: 24),
         const _SectionTitle('Informasi Perajin'),
         const SizedBox(height: 12),
-        _buildSellerInfo(product),
-        const _SectionDivider(),
+        _SellerCard(
+          product: product,
+          seller: seller,
+          onOpenProfile: seller == null ? null : () => _openSellerProfile(seller),
+        ),
+        const SizedBox(height: 24),
         const _SectionTitle('Detail Produk'),
         const SizedBox(height: 12),
-        _DetailRow(
-          icon: Icons.category_outlined,
-          label: 'Kategori',
-          value: product.category.label,
-        ),
-        _DetailRow(
-          icon: Icons.inventory_2_outlined,
-          label: 'Bahan',
-          value: product.material,
-        ),
-        _DetailRow(
-          icon: Icons.handyman_outlined,
-          label: 'Teknik',
-          value: product.technique,
-        ),
-        _DetailRow(
-          icon: Icons.eco_outlined,
-          label: 'Ramah lingkungan',
-          value: product.isEcoFriendly ? 'Ya' : 'Tidak',
-        ),
-        const _SectionDivider(),
-        const _SectionTitle('Tentang Produk'),
-        const SizedBox(height: 8),
-        Text(
-          product.description,
-          style: const TextStyle(fontSize: 14, height: 1.5, color: _muted),
-        ),
-      ],
-    );
-  }
-
-  /// Data penjual diambil dari models/seller.dart lewat sellerId.
-  /// Kalau id-nya belum ada di sana, dipakai data cadangan di Product
-  /// (inisial nama, tanpa tombol Lihat Profil).
-  Widget _buildSellerInfo(Product product) {
-    final seller = findSellerById(product.sellerId);
-    final name = seller?.name ?? product.sellerName;
-    final subtitle = seller?.shopName ?? product.sellerRole;
-
-    return Row(
-      children: [
-        ClipOval(
-          child: SizedBox(
-            width: 52,
-            height: 52,
-            child: seller != null
-                ? AppImage(path: seller.photo, placeholderIcon: Icons.person)
-                : _InitialAvatar(name: name),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
+        _InfoCard(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: _text,
-                ),
+              _DetailRow(
+                icon: Icons.category_outlined,
+                label: 'Kategori',
+                value: product.category.label,
               ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.primaryGreen,
-                ),
+              const SizedBox(height: 12),
+              _DetailRow(
+                icon: Icons.inventory_2_outlined,
+                label: 'Bahan',
+                value: product.material,
+              ),
+              const SizedBox(height: 12),
+              _DetailRow(
+                icon: Icons.handyman_outlined,
+                label: 'Teknik',
+                value: product.technique,
+              ),
+              const SizedBox(height: 12),
+              _DetailRow(
+                icon: Icons.eco_outlined,
+                label: 'Ramah lingkungan',
+                value: product.isEcoFriendly ? 'Ya' : 'Tidak',
               ),
             ],
           ),
         ),
-        if (seller != null) ...[
-          const SizedBox(width: 8),
-          PillButton(
-            icon: Icons.storefront_outlined,
-            label: 'Lihat Profil',
-            onTap: () => _openSellerProfile(seller),
+        const SizedBox(height: 24),
+        const _SectionTitle('Tentang Produk'),
+        const SizedBox(height: 8),
+        Text(
+          product.description,
+          style: text.bodyMedium?.copyWith(
+            height: 1.5,
+            color: cs.onSurfaceVariant,
+          ),
+        ),
+        if (otherProducts.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          _SectionTitle('Produk lain dari $shopLabel'),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 240,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: otherProducts.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, i) => _MiniProductCard(
+                product: otherProducts[i],
+                onTap: () => _openProduct(otherProducts[i]),
+              ),
+            ),
           ),
         ],
       ],
     );
   }
 
-  Widget _buildBottomBar(Product product) {
+  // ---------------------------------------------------------- BOTTOM BAR
+
+  Widget _buildBottomBar(BuildContext context, Product product) {
+    final cs = Theme.of(context).colorScheme;
+
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: _line)),
+        border: Border(top: BorderSide(color: cs.outlineVariant)),
       ),
       child: SafeArea(
         top: false,
@@ -352,14 +352,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   onPressed: _toggleFavorite,
                   style: OutlinedButton.styleFrom(
                     padding: EdgeInsets.zero,
-                    side: const BorderSide(color: _line),
+                    side: BorderSide(color: cs.outlineVariant),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                   child: Icon(
                     _favorite ? Icons.favorite : Icons.favorite_border,
-                    color: _favorite ? Colors.red : _text,
+                    color: _favorite ? cs.error : cs.onSurface,
                   ),
                 ),
               ),
@@ -367,28 +367,222 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               Expanded(
                 child: SizedBox(
                   height: 52,
-                  child: ElevatedButton.icon(
-                    // TODO: sambungkan ke keranjang (alur checkout milik Aulia).
+                  child: FilledButton.icon(
                     onPressed: () => _showMessage(
                       '"${product.name}" ditambahkan ke keranjang',
                     ),
                     icon: const Icon(Icons.add),
-                    label: const Text(
-                      'Keranjang',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
+                    label: const Text('Keranjang'),
+                    style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primaryGreen,
                       foregroundColor: Colors.white,
-                      elevation: 0,
+                      textStyle: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                   ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// Widget kecil (private)
+// ============================================================================
+
+/// Kontainer informasi: kartu putih dengan border tipis dan sudut membulat.
+class _InfoCard extends StatelessWidget {
+  final Widget child;
+
+  const _InfoCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Kartu perajin. Data lengkap diambil dari Seller (seller.dart).
+/// Kalau sellerId belum ada di dummySellers, tampil data cadangan dari Product.
+class _SellerCard extends StatelessWidget {
+  final Product product;
+  final Seller? seller;
+  final VoidCallback? onOpenProfile;
+
+  const _SellerCard({
+    required this.product,
+    required this.seller,
+    required this.onOpenProfile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+
+    final name = seller?.name ?? product.sellerName;
+    final subtitle = seller?.shopName ?? product.sellerRole;
+
+    return _InfoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              SizedBox(
+                width: 56,
+                height: 56,
+                child: ClipOval(
+                  child: seller != null
+                      ? AppImage(
+                          path: seller!.photo,
+                          placeholderIcon: Icons.person,
+                        )
+                      : _InitialAvatar(name: name),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.bodyMedium?.copyWith(
+                        color: AppColors.primaryGreen,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (seller != null) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                InfoChip(
+                  icon: Icons.star,
+                  iconColor: AppColors.star,
+                  label:
+                      '${seller!.rating.toStringAsFixed(1)} Rating Toko '
+                      '(${formatCount(seller!.reviewCount)})',
+                ),
+                if (seller!.isTrusted)
+                  const InfoChip(
+                    icon: Icons.verified_user,
+                    label: 'Penjual Terpercaya',
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              seller!.story,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: text.bodyMedium?.copyWith(
+                height: 1.5,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonalIcon(
+                onPressed: onOpenProfile,
+                icon: const Icon(Icons.storefront_outlined),
+                label: const Text('Lihat Profil Perajin'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Kartu produk kecil untuk daftar "Produk lain dari toko ini".
+class _MiniProductCard extends StatelessWidget {
+  final Product product;
+  final VoidCallback onTap;
+
+  const _MiniProductCard({required this.product, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return SizedBox(
+      width: 150,
+      child: Material(
+        color: Colors.white,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: cs.outlineVariant),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AspectRatio(
+                aspectRatio: 1,
+                child: AppImage(path: product.image),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      formatRupiah(product.price),
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryGreen,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -411,8 +605,7 @@ class _InitialAvatar extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         name.isNotEmpty ? name[0] : '?',
-        style: const TextStyle(
-          fontSize: 20,
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.w700,
           color: AppColors.primaryGreen,
         ),
@@ -425,13 +618,13 @@ class _CircleButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final Color color;
+  final Color? color;
 
   const _CircleButton({
     required this.icon,
     required this.label,
     required this.onTap,
-    this.color = _text,
+    this.color,
   });
 
   @override
@@ -446,7 +639,11 @@ class _CircleButton extends StatelessWidget {
           message: label,
           child: Padding(
             padding: const EdgeInsets.all(9),
-            child: Icon(icon, size: 20, color: color),
+            child: Icon(
+              icon,
+              size: 20,
+              color: color ?? Theme.of(context).colorScheme.onSurface,
+            ),
           ),
         ),
       ),
@@ -463,23 +660,10 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(
-        fontSize: 16,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
         fontWeight: FontWeight.w700,
-        color: _text,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
-    );
-  }
-}
-
-class _SectionDivider extends StatelessWidget {
-  const _SectionDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 16),
-      child: Divider(height: 1, color: _line),
     );
   }
 }
@@ -497,29 +681,28 @@ class _DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: AppColors.primaryGreen),
-          const SizedBox(width: 10),
-          Text(
-            '$label: ',
-            style: const TextStyle(fontSize: 14, color: _muted),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: _text,
-              ),
+    final text = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: AppColors.primaryGreen),
+        const SizedBox(width: 10),
+        Text(
+          '$label: ',
+          style: text.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: text.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: cs.onSurface,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

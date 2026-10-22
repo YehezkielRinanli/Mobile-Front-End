@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../data/product_data.dart';
 import '../models/product.dart';
+import '../models/seller.dart';
 import '../theme/app_colors.dart';
 import '../widgets/product_grid.dart';
 import '../widgets/product_grid_card.dart';
 import 'product_detail_screen.dart';
 
-const Color _text = Colors.black87;
-const Color _muted = Color(0xFF6B756F);
-const Color _line = Color(0xFFE0DBCF);
+const Color _searchFill = Color(0xFFF0F2EE);
 
 enum _PriceFilter {
   all('Semua harga'),
@@ -80,17 +79,23 @@ class _ExploreScreenState extends State<ExploreScreen> {
     super.dispose();
   }
 
+  bool _matchesQuery(Product p, String q) {
+    if (q.isEmpty) return true;
+    final shopName = findSellerById(p.sellerId)?.shopName.toLowerCase() ?? '';
+    return p.name.toLowerCase().contains(q) ||
+        p.category.label.toLowerCase().contains(q) ||
+        p.location.toLowerCase().contains(q) ||
+        p.sellerName.toLowerCase().contains(q) ||
+        shopName.contains(q);
+  }
+
   List<Product> get _results {
     final q = _query.trim().toLowerCase();
 
     final list = sampleProducts.where((p) {
       if (_category != null && p.category != _category) return false;
       if (!_price.matches(p.price)) return false;
-      if (q.isEmpty) return true;
-      return p.name.toLowerCase().contains(q) ||
-          p.category.label.toLowerCase().contains(q) ||
-          p.location.toLowerCase().contains(q) ||
-          p.sellerName.toLowerCase().contains(q);
+      return _matchesQuery(p, q);
     }).toList();
 
     switch (_sort) {
@@ -138,14 +143,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
           children: [
             _buildSearchBar(context),
             _buildFilters(),
-            const SizedBox(height: 8),
+            _buildResultCount(context, results.length),
             Expanded(
               child: results.isEmpty
                   ? _EmptyState(onReset: _resetFilters)
                   : SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      // ProductGrid memang dibuat untuk berada di dalam
-                      // halaman yang bisa di-scroll (shrinkWrap).
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                      // ProductGrid dibuat untuk berada di dalam halaman
+                      // yang bisa di-scroll (shrinkWrap).
                       child: ProductGrid(
                         itemCount: results.length,
                         itemBuilder: (context, index) {
@@ -170,6 +175,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   Widget _buildSearchBar(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 12, 16, 8),
       child: Row(
@@ -177,7 +185,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
           if (Navigator.of(context).canPop())
             IconButton(
               tooltip: 'Kembali',
-              icon: const Icon(Icons.arrow_back, color: _text),
+              icon: Icon(Icons.arrow_back, color: cs.onSurface),
               onPressed: () => Navigator.of(context).maybePop(),
             )
           else
@@ -187,23 +195,29 @@ class _ExploreScreenState extends State<ExploreScreen> {
               controller: _searchController,
               onChanged: (value) => setState(() => _query = value),
               textInputAction: TextInputAction.search,
-              style: const TextStyle(color: _text, fontSize: 14),
+              style: text.bodyMedium?.copyWith(color: cs.onSurface),
               decoration: InputDecoration(
-                hintText: 'Cari produk, perajin, atau daerah...',
-                hintStyle: const TextStyle(color: _muted, fontSize: 14),
-                prefixIcon: const Icon(Icons.search, color: _muted),
+                hintText: 'Cari produk, perajin, toko, atau daerah...',
+                hintStyle: text.bodyMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+                prefixIcon: Icon(Icons.search, color: cs.onSurfaceVariant),
                 suffixIcon: _query.isEmpty
                     ? null
                     : IconButton(
                         tooltip: 'Hapus pencarian',
-                        icon: const Icon(Icons.close, color: _muted, size: 18),
+                        icon: Icon(
+                          Icons.close,
+                          color: cs.onSurfaceVariant,
+                          size: 18,
+                        ),
                         onPressed: () => setState(() {
                           _searchController.clear();
                           _query = '';
                         }),
                       ),
                 filled: true,
-                fillColor: const Color(0xFFF0F2EE),
+                fillColor: _searchFill,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -260,11 +274,25 @@ class _ExploreScreenState extends State<ExploreScreen> {
       ),
     );
   }
+
+  Widget _buildResultCount(BuildContext context, int count) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+        child: Text(
+          '$count produk',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Pil filter dengan menu pilihan. Dibuat sendiri (bukan PillButton) karena
-/// butuh status aktif dan panah di kanan, sedangkan PillButton hanya punya
-/// ikon di kiri dan satu warna.
+/// butuh status aktif dan panah di kanan.
 class _FilterPill<T> extends StatelessWidget {
   final String label;
   final bool active;
@@ -282,6 +310,9 @@ class _FilterPill<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final contentColor = active ? AppColors.primaryGreen : cs.onSurface;
+
     return PopupMenuButton<T>(
       tooltip: label,
       position: PopupMenuPosition.under,
@@ -296,7 +327,7 @@ class _FilterPill<T> extends StatelessWidget {
           color: active ? AppColors.lightGreen : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: active ? AppColors.primaryGreen : _line,
+            color: active ? AppColors.primaryGreen : cs.outlineVariant,
           ),
         ),
         child: Row(
@@ -304,17 +335,16 @@ class _FilterPill<T> extends StatelessWidget {
           children: [
             Text(
               label,
-              style: TextStyle(
-                fontSize: 13,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: active ? AppColors.primaryGreen : _text,
+                color: contentColor,
               ),
             ),
             const SizedBox(width: 4),
             Icon(
               Icons.keyboard_arrow_down,
               size: 18,
-              color: active ? AppColors.primaryGreen : _muted,
+              color: active ? AppColors.primaryGreen : cs.onSurfaceVariant,
             ),
           ],
         ),
@@ -330,27 +360,29 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.search_off, size: 48, color: _muted),
+            Icon(Icons.search_off, size: 48, color: cs.onSurfaceVariant),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Produk tidak ditemukan',
-              style: TextStyle(
-                fontSize: 16,
+              style: text.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: _text,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Coba ubah kata kunci atau filter yang dipakai.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: _muted),
+              style: text.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
             ),
             const SizedBox(height: 12),
             TextButton(

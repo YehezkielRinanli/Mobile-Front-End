@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:wheel_of_fortune/screens/explore_screen.dart';
 
-import 'features/notification/screens/notification_screen.dart';
 
 // import 'features/checkout/screens/checkout_screen.dart'; // Mengimpor layar checkout yang sudah dibuat
 
@@ -22,7 +22,7 @@ class CraftOriginApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'Roboto', // Bisa diganti jika nanti ada custom font
       ),
-      home: const NotificationScreen(), // Mengarahkan ke layar checkout untuk saat ini
+      home: const ExploreScreen(), // Mengarahkan ke layar checkout untuk saat ini
     );
   }
 }
