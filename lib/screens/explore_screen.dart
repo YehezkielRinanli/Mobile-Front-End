@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../data/product_data.dart';
+import '../data/seller_bridge.dart';
 import '../models/product.dart';
-import '../models/seller.dart';
 import '../theme/app_colors.dart';
 import '../widgets/product_grid.dart';
 import '../widgets/product_grid_card.dart';
@@ -81,11 +81,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   bool _matchesQuery(Product p, String q) {
     if (q.isEmpty) return true;
-    final shopName = findSellerById(p.sellerId)?.shopName.toLowerCase() ?? '';
+    final seller = registeredSellerFor(p.sellerId);
+    final shopName = seller?.shopName.toLowerCase() ?? '';
+    final sellerName = (seller?.name ?? p.sellerName).toLowerCase();
+
     return p.name.toLowerCase().contains(q) ||
         p.category.label.toLowerCase().contains(q) ||
         p.location.toLowerCase().contains(q) ||
-        p.sellerName.toLowerCase().contains(q) ||
+        sellerName.contains(q) ||
         shopName.contains(q);
   }
 

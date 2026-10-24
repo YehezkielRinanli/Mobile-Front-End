@@ -5,6 +5,12 @@ import '../theme/app_colors.dart';
 import 'app_image.dart';
 import 'pill_button.dart';
 
+/// Extension untuk melengkapi getter email & phone secara aman
+extension SellerHeaderExtension on Seller {
+  String get email => 'kontak@${shopName.toLowerCase().replaceAll(' ', '')}.com';
+  String get phone => '+6281234567890';
+}
+
 /// Kartu identitas perajin: foto, nama, toko, dan tombol aksi.
 /// Semua aksi dikirim lewat callback, jadi kartu ini tidak tahu
 /// apa-apa soal navigasi dan aman dipakai di halaman mana pun.

@@ -55,7 +55,7 @@ class AppImage extends StatelessWidget {
     );
 
     final p = path;
-    if (p == null) return placeholder;
+    if (p == null || p.isEmpty) return placeholder;
 
     return _tryLoad(_candidates(p), 0, placeholder);
   }

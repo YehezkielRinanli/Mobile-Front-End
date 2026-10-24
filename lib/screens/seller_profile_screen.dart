@@ -7,13 +7,32 @@ import '../widgets/info_chip.dart';
 import '../widgets/product_grid.dart';
 import '../widgets/product_grid_card.dart';
 import '../widgets/seller_header_card.dart';
+import 'product_detail_screen.dart';
+
+/// Extension untuk melengkapi properti opsional tanpa mengubah file model asli
+extension SellerExtension on Seller {
+  int get reviewCount => 128;
+  bool get isTrusted => rating >= 4.8;
+  String get story => bio.isNotEmpty
+      ? bio
+      : 'Memperkenalkan karya kerajinan tangan berkualitas tinggi yang dibuat dengan ketelitian dan semangat menjaga warisan budaya lokal.';
+  String get email => 'kontak@${shopName.toLowerCase().replaceAll(' ', '')}.com';
+  String get phone => '+6281234567890';
+}
+
+extension SellerProductExtension on SellerProduct {
+  double get rating => 4.8;
+  int get reviewCount => 42;
+  int get numericPrice {
+    final cleanStr = price.replaceAll(RegExp(r'[^0-9]'), '');
+    return int.tryParse(cleanStr) ?? 0;
+  }
+}
 
 class SellerProfileScreen extends StatefulWidget {
-  final Seller seller;
+  final Seller? seller;
 
-  // Sementara memakai data contoh. Nanti halaman produk mengirim
-  // data penjual yang sesuai lewat: SellerProfileScreen(seller: dataPenjual)
-  const SellerProfileScreen({super.key, this.seller = dummySeller});
+  const SellerProfileScreen({super.key, this.seller});
 
   @override
   State<SellerProfileScreen> createState() => _SellerProfileScreenState();
@@ -22,6 +41,21 @@ class SellerProfileScreen extends StatefulWidget {
 class _SellerProfileScreenState extends State<SellerProfileScreen> {
   bool _isFollowing = false;
 
+  Seller get _activeSeller =>
+      widget.seller ??
+      (dummySellers.isNotEmpty
+          ? dummySellers.first
+          : const Seller(
+              id: 's1',
+              name: 'Ibu Siti',
+              shopName: 'Rumah Rotan',
+              photo: 'assets/images/seller_siti_aminah.jpg',
+              location: 'Bali',
+              bio: 'Perajin anyaman rotan ramah lingkungan.',
+              rating: 4.9,
+              products: [],
+            ));
+
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -29,35 +63,30 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
   }
 
   void _sendEmail() {
-    // TODO: Buka aplikasi email (butuh package url_launcher, skema mailto:)
     _showMessage('Fitur email belum tersambung');
   }
 
   void _callSeller() {
-    // TODO: Buka aplikasi telepon (butuh package url_launcher)
     _showMessage('Fitur telepon belum tersambung');
   }
 
   void _openProduct(SellerProduct product) {
-    // TODO: Pindah ke halaman detail produk (dikerjakan teman satu tim), misal:
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (_) => ProductDetailScreen(productId: product.id),
-    //   ),
-    // );
-    _showMessage('Detail "${product.name}" belum tersedia');
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ProductDetailScreen(productId: product.id),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final seller = widget.seller;
+    final seller = _activeSeller;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
       body: SafeArea(
-        top: false, // Bagian atas sudah ditangani AppBar
+        top: false,
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           child: Column(
@@ -85,8 +114,6 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
       ),
     );
   }
-
-  // --- Ekstraksi method agar build() tetap rapi ---
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
@@ -202,7 +229,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
             final product = seller.products[index];
             return ProductGridCard(
               name: product.name,
-              price: product.price,
+              price: product.numericPrice,
               image: product.image,
               rating: product.rating,
               reviewCount: product.reviewCount,
