@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'explore.dart'; // PASTI KAN INI ADA UNTUK MEMANGGIL EXPLORE SCREEN
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -170,9 +171,14 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       return;
     }
+    
+    if (index == 1) {
+      // PERUBAHAN: Pindah ke halaman Explore (index 1)
+      setState(() => _selectedNavigationIndex = 1);
+      return;
+    }
 
-    // Destination selain Home belum dibuat; beri umpan balik tanpa menampilkan
-    // halaman kosong seolah-olah navigasinya sudah selesai.
+    // Destination Keranjang dan Profil belum dibuat
     const List<String> destinationNames = [
       'Home',
       'Jelajah',
@@ -189,38 +195,17 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: colors.surface,
       body: SafeArea(
-        // SingleChildScrollView menangani scroll vertikal halaman utama.
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              _buildSearchField(),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: HeroBannerCard(onShopNow: _goToRecommendations),
-              ),
-              const SizedBox(height: 24),
-              SectionHeader(
-                title: 'Kategori',
-                subtitle: 'Temukan karya sesuai kebutuhanmu',
-                actionLabel: 'Reset',
-                onTapAction: () => _selectCategory('Semua'),
-              ),
-              _buildCategoryGrid(),
-              const SizedBox(height: 18),
-              _buildRecommendations(),
-              const SizedBox(height: 28),
-              _buildArtisanSection(),
-              const SizedBox(height: 24),
-              _buildImpactCard(),
-              const SizedBox(height: 28),
-            ],
-          ),
+        // PERUBAHAN UTAMA: Menggunakan IndexedStack untuk beralih halaman
+        child: IndexedStack(
+          index: _selectedNavigationIndex,
+          children: [
+            _buildHomeContent(), // Halaman Home (Index 0)
+            const ExploreScreen(), // Halaman Explore (Index 1) - Memanggil explore.dart
+            const Center(child: Text('Keranjang - Segera Hadir')), // (Index 2)
+            const Center(child: Text('Profil - Segera Hadir')), // (Index 3)
+          ],
         ),
       ),
-      // NavigationBar menggantikan BottomNavigationBar agar menggunakan M3.
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedNavigationIndex,
         onDestinationSelected: _onNavigationSelected,
@@ -246,6 +231,39 @@ class _HomeScreenState extends State<HomeScreen> {
             selectedIcon: Icon(Icons.person_rounded),
             label: 'Profil',
           ),
+        ],
+      ),
+    );
+  }
+
+  // PERUBAHAN: Isi halaman Home dipindahkan ke method terpisah
+  Widget _buildHomeContent() {
+    return SingleChildScrollView(
+      controller: _scrollController,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(),
+          _buildSearchField(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: HeroBannerCard(onShopNow: _goToRecommendations),
+          ),
+          const SizedBox(height: 24),
+          SectionHeader(
+            title: 'Kategori',
+            subtitle: 'Temukan karya sesuai kebutuhanmu',
+            actionLabel: 'Reset',
+            onTapAction: () => _selectCategory('Semua'),
+          ),
+          _buildCategoryGrid(),
+          const SizedBox(height: 18),
+          _buildRecommendations(),
+          const SizedBox(height: 28),
+          _buildArtisanSection(),
+          const SizedBox(height: 24),
+          _buildImpactCard(),
+          const SizedBox(height: 28),
         ],
       ),
     );
