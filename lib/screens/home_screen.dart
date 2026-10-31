@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'explore.dart'; // PASTI KAN INI ADA UNTUK MEMANGGIL EXPLORE SCREEN
+
+import 'explore_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,6 +18,19 @@ class _HomeScreenState extends State<HomeScreen> {
   String _selectedCategory = 'Semua';
   int _selectedNavigationIndex = 0;
   final Set<String> _favoriteProducts = <String>{};
+
+  // [M07] Breakpoint tersentral agar semua keputusan layout memakai angka sama.
+  static const double _tabletBreakpoint = 600;
+  static const double _wideBreakpoint = 900;
+  static const double _railBreakpoint = 840;
+  static const double _contentMaxWidth = 1200;
+
+  static const List<_NavItem> _navItems = [
+    _NavItem('Home', Icons.home_outlined, Icons.home_rounded),
+    _NavItem('Jelajah', Icons.explore_outlined, Icons.explore_rounded),
+    _NavItem('Keranjang', Icons.shopping_bag_outlined, Icons.shopping_bag_rounded),
+    _NavItem('Profil', Icons.person_outline_rounded, Icons.person_rounded),
+  ];
 
   static const List<MarketCategory> _categories = [
     MarketCategory(label: 'Tas & Aksesori', icon: Icons.shopping_bag_outlined),
@@ -112,8 +126,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final String query = _searchQuery.trim().toLowerCase();
 
     return _products.where((product) {
-      final bool matchesCategory = _selectedCategory == 'Semua' ||
-          product.category == _selectedCategory;
+      final bool matchesCategory =
+          _selectedCategory == 'Semua' || product.category == _selectedCategory;
       final String searchableText =
           '${product.name} ${product.category} ${product.artisan} ${product.location}'
               .toLowerCase();
@@ -164,108 +178,175 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onNavigationSelected(int index) {
     if (index == 0) {
       setState(() => _selectedNavigationIndex = 0);
-      _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
       return;
     }
-    
+
     if (index == 1) {
-      // PERUBAHAN: Pindah ke halaman Explore (index 1)
       setState(() => _selectedNavigationIndex = 1);
       return;
     }
 
-    // Destination Keranjang dan Profil belum dibuat
-    const List<String> destinationNames = [
-      'Home',
-      'Jelajah',
-      'Keranjang',
-      'Profil',
-    ];
-    _showMessage('Halaman ${destinationNames[index]} akan dikembangkan berikutnya.');
+    // Keranjang dan Profil belum dibuat.
+    _showMessage(
+      'Halaman ${_navItems[index].label} akan dikembangkan berikutnya.',
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // [M07] Helper Screen Metrics
+  // ---------------------------------------------------------------------------
+
+  // Jumlah kolom grid kategori mengikuti lebar area yang tersedia.
+  int _categoryColumns(double width) {
+    if (width < _tabletBreakpoint) return 3; // ponsel
+    if (width < _wideBreakpoint) return 4; // tablet portrait
+    if (width < 1200) return 5; // tablet landscape
+    return 6; // layar sangat lebar
+  }
+
+  // Lebar kartu produk/perajin bertambah di layar yang lebih besar.
+  double _productCardWidth(double width) {
+    if (width < _tabletBreakpoint) return 184;
+    if (width < _wideBreakpoint) return 200;
+    return 220;
+  }
+
+  double _artisanCardWidth(double width) {
+    if (width < _tabletBreakpoint) return 244;
+    return 290;
+  }
+
+  // Skala teks sistem (pengaturan aksesibilitas), dibatasi 1.0 - 1.4 agar
+  // tinggi kontainer ikut membesar tanpa merusak layout.
+  double _textScale(BuildContext context) {
+    return MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.4);
   }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      backgroundColor: colors.surface,
-      body: SafeArea(
-        // PERUBAHAN UTAMA: Menggunakan IndexedStack untuk beralih halaman
-        child: IndexedStack(
+    // [M07] LayoutBuilder level halaman: layar lebar memakai NavigationRail
+    // (samping), layar sempit memakai NavigationBar (bawah).
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool useRail = constraints.maxWidth >= _railBreakpoint;
+
+        final Widget body = IndexedStack(
           index: _selectedNavigationIndex,
           children: [
-            _buildHomeContent(), // Halaman Home (Index 0)
-            const ExploreScreen(), // Halaman Explore (Index 1) - Memanggil explore.dart
-            const Center(child: Text('Keranjang - Segera Hadir')), // (Index 2)
-            const Center(child: Text('Profil - Segera Hadir')), // (Index 3)
+            _buildHomeContent(), // Index 0
+            const ExploreScreen(), // Index 1
+            const Center(child: Text('Keranjang - Segera Hadir')), // Index 2
+            const Center(child: Text('Profil - Segera Hadir')), // Index 3
           ],
-        ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedNavigationIndex,
-        onDestinationSelected: _onNavigationSelected,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home',
+        );
+
+        return Scaffold(
+          backgroundColor: colors.surface,
+          body: SafeArea(
+            // [M06] Row: rail di kiri, konten di kanan (Expanded).
+            child: useRail
+                ? Row(
+                    children: [
+                      NavigationRail(
+                        selectedIndex: _selectedNavigationIndex,
+                        onDestinationSelected: _onNavigationSelected,
+                        labelType: NavigationRailLabelType.all,
+                        backgroundColor: Colors.white,
+                        indicatorColor: const Color(0xFFDDE9DF),
+                        destinations: [
+                          for (final _NavItem item in _navItems)
+                            NavigationRailDestination(
+                              icon: Icon(item.icon),
+                              selectedIcon: Icon(item.selectedIcon),
+                              label: Text(item.label),
+                            ),
+                        ],
+                      ),
+                      const VerticalDivider(width: 1),
+                      Expanded(child: body),
+                    ],
+                  )
+                : body,
           ),
-          NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore_rounded),
-            label: 'Jelajah',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.shopping_bag_outlined),
-            selectedIcon: Icon(Icons.shopping_bag_rounded),
-            label: 'Keranjang',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Profil',
-          ),
-        ],
-      ),
+          bottomNavigationBar: useRail
+              ? null
+              : NavigationBar(
+                  selectedIndex: _selectedNavigationIndex,
+                  onDestinationSelected: _onNavigationSelected,
+                  labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                  destinations: [
+                    for (final _NavItem item in _navItems)
+                      NavigationDestination(
+                        icon: Icon(item.icon),
+                        selectedIcon: Icon(item.selectedIcon),
+                        label: item.label,
+                      ),
+                  ],
+                ),
+        );
+      },
     );
   }
 
-  // PERUBAHAN: Isi halaman Home dipindahkan ke method terpisah
+  // ---------------------------------------------------------------------------
+  // HALAMAN HOME
+  // ---------------------------------------------------------------------------
   Widget _buildHomeContent() {
-    return SingleChildScrollView(
-      controller: _scrollController,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(),
-          _buildSearchField(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: HeroBannerCard(onShopNow: _goToRecommendations),
+    // [M07] LayoutBuilder: constraints.maxWidth = lebar area konten sebenarnya
+    // (sudah dikurangi NavigationRail bila ada).
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double width = constraints.maxWidth;
+
+        // Konten dibatasi lebar maksimum, lalu diletakkan di tengah.
+        final double contentWidth =
+            width > _contentMaxWidth ? _contentMaxWidth : width;
+
+        return SingleChildScrollView(
+          controller: _scrollController,
+          child: Center(
+            child: SizedBox(
+              width: contentWidth,
+              // [M06] Column: susunan vertikal utama halaman.
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  _buildSearchField(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: HeroBannerCard(onShopNow: _goToRecommendations),
+                  ),
+                  const SizedBox(height: 24),
+                  SectionHeader(
+                    title: 'Kategori',
+                    subtitle: 'Temukan karya sesuai kebutuhanmu',
+                    actionLabel: 'Reset',
+                    onTapAction: () => _selectCategory('Semua'),
+                  ),
+                  _buildCategoryGrid(contentWidth),
+                  const SizedBox(height: 18),
+                  _buildRecommendations(contentWidth),
+                  const SizedBox(height: 28),
+                  _buildArtisanSection(contentWidth),
+                  const SizedBox(height: 24),
+                  _buildImpactCard(),
+                  const SizedBox(height: 28),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 24),
-          SectionHeader(
-            title: 'Kategori',
-            subtitle: 'Temukan karya sesuai kebutuhanmu',
-            actionLabel: 'Reset',
-            onTapAction: () => _selectCategory('Semua'),
-          ),
-          _buildCategoryGrid(),
-          const SizedBox(height: 18),
-          _buildRecommendations(),
-          const SizedBox(height: 28),
-          _buildArtisanSection(),
-          const SizedBox(height: 24),
-          _buildImpactCard(),
-          const SizedBox(height: 28),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -293,6 +374,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   'PASAR KARYA LOKAL',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: colors.onSurfaceVariant,
                         letterSpacing: 1.1,
@@ -302,6 +385,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 2),
                 Text(
                   'CraftOrigin',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: colors.primary,
                         fontSize: 23,
@@ -312,7 +397,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           IconButton.filledTonal(
             tooltip: 'Notifikasi',
-            onPressed: () => _showMessage('Fitur notifikasi akan dikembangkan berikutnya.'),
+            onPressed: () =>
+                _showMessage('Fitur notifikasi akan dikembangkan berikutnya.'),
             icon: const Icon(Icons.notifications_none_rounded),
           ),
         ],
@@ -320,7 +406,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // TextField tersambung ke state sehingga pencarian memfilter produk langsung.
   Widget _buildSearchField() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -347,19 +432,27 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // GRID VIEW: contoh multi-child layout untuk pilihan kategori.
-  Widget _buildCategoryGrid() {
+  // [M06] GridView + [M07] jumlah kolom dinamis dari lebar layar.
+  Widget _buildCategoryGrid(double contentWidth) {
+    final int columns = _categoryColumns(contentWidth);
+    final double textScale = _textScale(context);
+
+    // Tinggi sel dibuat tetap (mainAxisExtent), bukan childAspectRatio, supaya
+    // tinggi tidak membengkak saat kolom bertambah di layar lebar. Tambahan
+    // tinggi mengikuti skala teks agar label 2 baris tidak overflow.
+    final double cellHeight = 112 + (textScale - 1) * 40;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: _categories.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: columns,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 0.94,
+          mainAxisExtent: cellHeight,
         ),
         itemBuilder: (context, index) {
           final MarketCategory category = _categories[index];
@@ -373,11 +466,19 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // WRAP + ChoiceChip memungkinkan filter berpindah baris sesuai lebar layar.
-  Widget _buildRecommendations() {
+  Widget _buildRecommendations(double contentWidth) {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final List<CraftProduct> visibleProducts = _visibleProducts;
-    final List<String> filters = ['Semua', ..._categories.map((item) => item.label)];
+    final List<String> filters = [
+      'Semua',
+      ..._categories.map((item) => item.label),
+    ];
+
+    // [M07] Ukuran kartu & tinggi list dihitung dari metrik layar.
+    final double cardWidth = _productCardWidth(contentWidth);
+    final double textScale = _textScale(context);
+    // Tinggi = tinggi gambar (rasio 1.22) + area teks yang ikut skala teks.
+    final double listHeight = (cardWidth / 1.22) + (140 * textScale);
 
     return Column(
       key: _recommendationsKey,
@@ -389,31 +490,44 @@ class _HomeScreenState extends State<HomeScreen> {
           actionLabel: 'Lihat Semua',
           onTapAction: () {
             setState(() => _selectedCategory = 'Semua');
-            _showMessage('Menampilkan semua produk yang tersedia di contoh katalog.');
+            _showMessage(
+              'Menampilkan semua produk yang tersedia di contoh katalog.',
+            );
           },
         ),
         const SizedBox(height: 4),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
+          // [M06] Wrap: chip pindah baris otomatis sesuai lebar layar.
           child: Wrap(
             spacing: 8,
-            runSpacing: 2,
+            runSpacing: 6,
             children: filters.map((filter) {
               final bool isSelected = _selectedCategory == filter;
-              return ChoiceChip(
-                label: Text(filter),
-                selected: isSelected,
-                onSelected: (_) => setState(() => _selectedCategory = filter),
-                showCheckmark: false,
-                labelStyle: TextStyle(
-                  color: isSelected ? colors.onPrimary : colors.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-                selectedColor: colors.primary,
-                backgroundColor: colors.surface,
-                side: BorderSide(color: colors.outlineVariant),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
+              return ConstrainedBox(
+                // [M07] Chip tidak boleh lebih lebar dari area konten,
+                // sehingga label panjang di-ellipsis, bukan overflow.
+                constraints: BoxConstraints(maxWidth: contentWidth - 32),
+                child: ChoiceChip(
+                  label: Text(
+                    filter,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  selected: isSelected,
+                  onSelected: (_) => setState(() => _selectedCategory = filter),
+                  showCheckmark: false,
+                  labelStyle: TextStyle(
+                    color:
+                        isSelected ? colors.onPrimary : colors.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  selectedColor: colors.primary,
+                  backgroundColor: colors.surface,
+                  side: BorderSide(color: colors.outlineVariant),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
                 ),
               );
             }).toList(),
@@ -426,7 +540,8 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Center(
               child: Column(
                 children: [
-                  Icon(Icons.search_off_rounded, size: 36, color: colors.outline),
+                  Icon(Icons.search_off_rounded,
+                      size: 36, color: colors.outline),
                   const SizedBox(height: 8),
                   Text(
                     'Produk tidak ditemukan',
@@ -446,8 +561,8 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         else
           SizedBox(
-            height: 292,
-            // ListView horizontal menampilkan kartu produk yang bisa digeser.
+            height: listHeight,
+            // [M06] ListView horizontal untuk kartu produk yang bisa digeser.
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
               scrollDirection: Axis.horizontal,
@@ -456,6 +571,7 @@ class _HomeScreenState extends State<HomeScreen> {
               itemBuilder: (context, index) {
                 final CraftProduct product = visibleProducts[index];
                 return ProductCard(
+                  width: cardWidth,
                   product: product,
                   isFavorite: _favoriteProducts.contains(product.name),
                   onFavoriteTap: () {
@@ -476,7 +592,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildArtisanSection() {
+  Widget _buildArtisanSection(double contentWidth) {
+    final double textScale = _textScale(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -484,11 +602,13 @@ class _HomeScreenState extends State<HomeScreen> {
           title: 'Kenali Perajinnya',
           subtitle: 'Cerita di balik karya yang kamu pilih',
           actionLabel: 'Tentang Kami',
-          onTapAction: () => _showMessage('Profil lengkap perajin akan tersedia berikutnya.'),
+          onTapAction: () =>
+              _showMessage('Profil lengkap perajin akan tersedia berikutnya.'),
         ),
         const SizedBox(height: 8),
         SizedBox(
-          height: 116,
+          // [M07] Tinggi mengikuti skala teks agar isi kartu tidak terpotong.
+          height: 116 * textScale,
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             scrollDirection: Axis.horizontal,
@@ -497,6 +617,7 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context, index) {
               final ArtisanProfile artisan = _artisans[index];
               return ArtisanCard(
+                width: _artisanCardWidth(contentWidth),
                 artisan: artisan,
                 onTap: () => _showMessage(
                   'Profil ${artisan.name} akan tersedia pada pengembangan berikutnya.',
@@ -509,7 +630,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Card informasi menghubungkan identitas CraftOrigin dengan SDG 8.
+  // Card informasi yang menghubungkan CraftOrigin dengan SDG 8.
   Widget _buildImpactCard() {
     final ColorScheme colors = Theme.of(context).colorScheme;
 
@@ -540,7 +661,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: colors.surface.withOpacity(0.8),
                         borderRadius: BorderRadius.circular(20),
@@ -576,6 +700,15 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
+
+// Data item navigasi, dipakai bersama oleh NavigationBar dan NavigationRail.
+class _NavItem {
+  const _NavItem(this.label, this.icon, this.selectedIcon);
+
+  final String label;
+  final IconData icon;
+  final IconData selectedIcon;
 }
 
 // -----------------------------------------------------------------------------
@@ -634,95 +767,138 @@ class HeroBannerCard extends StatelessWidget {
 
   final VoidCallback onShopNow;
 
+  // [M07] Batas tinggi banner. Di layar besar tinggi tidak melewati 300.
+  static const BoxConstraints _heightLimits = BoxConstraints(
+    minHeight: 190,
+    maxHeight: 300,
+  );
+
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
 
-    return SizedBox(
-      height: 190,
-      width: double.infinity,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Aset lokal dipakai bila tersedia; gradient menjadi fallback visual.
-            Image.asset(
-              'assets/images/banner_bg.png',
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return const DecoratedBox(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double width = constraints.maxWidth;
+
+        // [M07] Tinggi ideal = lebar / 2.1, lalu dipaksa masuk ke batas
+        // BoxConstraints (min 190, max 300) lewat constrainHeight().
+        final double height = _heightLimits.constrainHeight(width / 2.1);
+
+        // Ukuran judul ikut lebar banner, dibatasi 22 - 36.
+        final double titleSize = (width * 0.055).clamp(22.0, 36.0);
+
+        return SizedBox(
+          height: height,
+          width: double.infinity,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            // [M06] Stack: gambar, gradient, lalu konten teks di atasnya.
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  'assets/images/banner_bg.png',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF718566), Color(0xFF263F30)],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFF718566), Color(0xFF263F30)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Color(0xD9000000),
+                        Color(0x66000000),
+                        Color(0x00000000),
+                      ],
                     ),
                   ),
-                );
-              },
-            ),
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [Color(0xD9000000), Color(0x66000000), Color(0x00000000)],
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 16, 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: Colors.white.withOpacity(0.45)),
-                    ),
-                    child: const Text(
-                      'KARYA LOKAL, DAMPAK NYATA',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 9,
-                        letterSpacing: 0.6,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 16, 18),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    // FittedBox(scaleDown): bila teks sistem membesar dan isi
+                    // lebih tinggi dari banner, isi diperkecil, bukan overflow.
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.45),
+                              ),
+                            ),
+                            child: const Text(
+                              'KARYA LOKAL, DAMPAK NYATA',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 9,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Produk Lokal\nRamah Lingkungan',
+                            style:
+                                Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      color: Colors.white,
+                                      fontSize: titleSize,
+                                      height: 1.15,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                          ),
+                          const SizedBox(height: 12),
+                          FilledButton.tonalIcon(
+                            onPressed: onShopNow,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: colors.primary,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 9,
+                              ),
+                              minimumSize: const Size(0, 40),
+                            ),
+                            icon: const Icon(
+                              Icons.shopping_bag_outlined,
+                              size: 17,
+                            ),
+                            label: const Text('Belanja Sekarang'),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Produk Lokal\nRamah Lingkungan',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontSize: 23,
-                          height: 1.15,
-                          fontWeight: FontWeight.w800,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Elevated/FilledButton mengikuti gaya Material 3 global.
-                  FilledButton.tonalIcon(
-                    onPressed: onShopNow,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: colors.primary,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                      minimumSize: const Size(0, 40),
-                    ),
-                    icon: const Icon(Icons.shopping_bag_outlined, size: 17),
-                    label: const Text('Belanja Sekarang'),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -859,6 +1035,7 @@ class ProductCard extends StatelessWidget {
     required this.isFavorite,
     required this.onFavoriteTap,
     required this.onTap,
+    this.width = 184,
   });
 
   final CraftProduct product;
@@ -866,12 +1043,17 @@ class ProductCard extends StatelessWidget {
   final VoidCallback onFavoriteTap;
   final VoidCallback onTap;
 
+  // Lebar bisa diatur dari luar (ListView di Home). Di dalam GridView
+  // (ExploreScreen) lebar otomatis mengikuti sel grid, karena constraint
+  // dari grid bersifat tight dan menimpa nilai ini.
+  final double? width;
+
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
 
     return SizedBox(
-      width: 184,
+      width: width,
       child: Card(
         margin: EdgeInsets.zero,
         elevation: 1,
@@ -891,13 +1073,15 @@ class ProductCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Ilustrasi ikon dipakai sampai foto produk lokal tersedia.
                     ProductIllustration(product: product),
                     Positioned(
                       left: 9,
                       top: 9,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 5,
+                        ),
                         decoration: BoxDecoration(
                           color: colors.surface.withOpacity(0.94),
                           borderRadius: BorderRadius.circular(30),
@@ -905,11 +1089,15 @@ class ProductCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.eco_rounded, color: colors.primary, size: 12),
+                            Icon(Icons.eco_rounded,
+                                color: colors.primary, size: 12),
                             const SizedBox(width: 3),
                             Text(
                               'Pilihan lokal',
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
                                     color: colors.primary,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 9,
@@ -923,15 +1111,20 @@ class ProductCard extends StatelessWidget {
                       top: 4,
                       right: 4,
                       child: IconButton.filledTonal(
-                        tooltip: isFavorite ? 'Hapus dari favorit' : 'Tambah ke favorit',
+                        tooltip: isFavorite
+                            ? 'Hapus dari favorit'
+                            : 'Tambah ke favorit',
                         onPressed: onFavoriteTap,
                         visualDensity: VisualDensity.compact,
                         style: IconButton.styleFrom(
                           backgroundColor: colors.surface.withOpacity(0.92),
-                          foregroundColor: isFavorite ? Colors.redAccent : colors.primary,
+                          foregroundColor:
+                              isFavorite ? Colors.redAccent : colors.primary,
                         ),
                         icon: Icon(
-                          isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          isFavorite
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
                           size: 18,
                         ),
                       ),
@@ -979,6 +1172,8 @@ class ProductCard extends StatelessWidget {
                       const SizedBox(height: 5),
                       Text(
                         product.price,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               color: colors.primary,
                               fontSize: 14,
@@ -1015,7 +1210,6 @@ class ProductIllustration extends StatelessWidget {
         ),
       ),
       child: Center(
-        // Center + Container menunjukkan single-child layout dalam komponen.
         child: Container(
           width: 84,
           height: 84,
@@ -1031,17 +1225,23 @@ class ProductIllustration extends StatelessWidget {
 }
 
 class ArtisanCard extends StatelessWidget {
-  const ArtisanCard({super.key, required this.artisan, required this.onTap});
+  const ArtisanCard({
+    super.key,
+    required this.artisan,
+    required this.onTap,
+    this.width = 244,
+  });
 
   final ArtisanProfile artisan;
   final VoidCallback onTap;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
 
     return SizedBox(
-      width: 244,
+      width: width,
       child: Card(
         margin: EdgeInsets.zero,
         elevation: 0,
@@ -1078,9 +1278,10 @@ class ArtisanCard extends StatelessWidget {
                         artisan.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontSize: 14,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontSize: 14,
+                                ),
                       ),
                       const SizedBox(height: 3),
                       Text(
@@ -1102,7 +1303,10 @@ class ArtisanCard extends StatelessWidget {
                               artisan.location,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
                                     color: colors.primary,
                                     fontWeight: FontWeight.w700,
                                   ),
