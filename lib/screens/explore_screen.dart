@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../core/constants/app_spacing.dart';
 import '../data/product_data.dart';
 import '../models/product.dart';
 import '../theme/app_colors.dart';
-import '../widgets/product_grid.dart';
-import '../widgets/product_grid_card.dart';
+import '../widgets/product/product_grid.dart';
 import 'product_detail_screen.dart';
 
 const Color _text = Colors.black87;
@@ -45,11 +45,6 @@ enum _SortOption {
 }
 
 /// Halaman Explore / Products: pencarian, filter, dan grid produk.
-///
-/// Dari Home (tab Jelajah atau item kategori):
-/// Navigator.push(context, MaterialPageRoute(
-///   builder: (_) => ExploreScreen(initialCategory: ProductCategory.anyaman),
-/// ));
 class ExploreScreen extends StatefulWidget {
   final ProductCategory? initialCategory;
 
@@ -138,28 +133,20 @@ class _ExploreScreenState extends State<ExploreScreen> {
           children: [
             _buildSearchBar(context),
             _buildFilters(),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.xs),
             Expanded(
               child: results.isEmpty
                   ? _EmptyState(onReset: _resetFilters)
                   : SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      // ProductGrid memang dibuat untuk berada di dalam
-                      // halaman yang bisa di-scroll (shrinkWrap).
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.md,
+                        AppSpacing.xs,
+                        AppSpacing.md,
+                        AppSpacing.lg,
+                      ),
                       child: ProductGrid(
-                        itemCount: results.length,
-                        itemBuilder: (context, index) {
-                          final product = results[index];
-                          return ProductGridCard(
-                            name: product.name,
-                            price: product.price,
-                            image: product.image,
-                            rating: product.rating,
-                            reviewCount: product.reviewCount,
-                            location: product.location,
-                            onTap: () => _openProduct(product),
-                          );
-                        },
+                        products: results,
+                        onProductTap: _openProduct,
                       ),
                     ),
             ),
@@ -171,7 +158,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   Widget _buildSearchBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 12, 16, 8),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xs,
+        AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.xs,
+      ),
       child: Row(
         children: [
           if (Navigator.of(context).canPop())
@@ -181,7 +173,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               onPressed: () => Navigator.of(context).maybePop(),
             )
           else
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.xs),
           Expanded(
             child: TextField(
               controller: _searchController,
@@ -222,7 +214,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       height: 44,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
         children: [
           _FilterPill<String>(
             label: _category?.label ?? 'Kategori',
@@ -240,7 +232,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   : ProductCategory.values.byName(v);
             }),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.xs),
           _FilterPill<_PriceFilter>(
             label: _price == _PriceFilter.all ? 'Harga' : _price.label,
             active: _price != _PriceFilter.all,
@@ -248,7 +240,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
             labelOf: (v) => v.label,
             onSelected: (v) => setState(() => _price = v),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.xs),
           _FilterPill<_SortOption>(
             label: _sort == _SortOption.relevance ? 'Urutkan' : _sort.label,
             active: _sort != _SortOption.relevance,
@@ -262,9 +254,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 }
 
-/// Pil filter dengan menu pilihan. Dibuat sendiri (bukan PillButton) karena
-/// butuh status aktif dan panah di kanan, sedangkan PillButton hanya punya
-/// ikon di kiri dan satu warna.
 class _FilterPill<T> extends StatelessWidget {
   final String label;
   final bool active;
@@ -332,12 +321,12 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.search_off, size: 48, color: _muted),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             const Text(
               'Produk tidak ditemukan',
               style: TextStyle(
@@ -346,13 +335,13 @@ class _EmptyState extends StatelessWidget {
                 color: _text,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs / 2),
             const Text(
               'Coba ubah kata kunci atau filter yang dipakai.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: _muted),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             TextButton(
               onPressed: onReset,
               child: const Text('Reset filter'),

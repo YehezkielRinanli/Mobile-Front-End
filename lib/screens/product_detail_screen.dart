@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
 
+import '../core/constants/app_spacing.dart';
 import '../data/product_data.dart';
 import '../models/product.dart';
 import '../models/seller.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
 import '../widgets/app_image.dart';
-import '../widgets/eco_badge.dart';
+import '../widgets/common/eco_badge.dart';
 import '../widgets/info_chip.dart';
-import '../widgets/pill_button.dart';
 import 'seller_profile_screen.dart';
 
 const Color _text = Colors.black87;
 const Color _muted = Color(0xFF6B756F);
 const Color _line = Color(0xFFE0DBCF);
 
-/// Halaman detail produk. Dipanggil dengan id produk, sesuai TODO di
-/// seller_profile_screen.dart:
-/// ProductDetailScreen(productId: product.id)
+/// Halaman detail produk.
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
 
@@ -47,7 +45,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  /// Fungsi pembantu untuk mencari seller berdasarkan ID dari dummySellers
   Seller? _findSellerById(String sellerId) {
     try {
       return dummySellers.firstWhere((s) => s.id == sellerId);
@@ -82,7 +79,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   _buildHeader(context, photos, index),
                   if (photos.length > 1) _buildThumbnails(photos, index),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.sm,
+                      AppSpacing.md,
+                      AppSpacing.lg,
+                    ),
                     child: _buildBody(product),
                   ),
                 ],
@@ -99,7 +101,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.sm,
+          AppSpacing.xs,
+          AppSpacing.sm,
+          0,
+        ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: AspectRatio(
@@ -128,7 +135,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         onTap: () =>
                             _showMessage('Fitur bagikan belum tersedia'),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.xs),
                       _CircleButton(
                         icon:
                             _favorite ? Icons.favorite : Icons.favorite_border,
@@ -174,9 +181,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       height: 72,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.sm,
+          AppSpacing.xs,
+          AppSpacing.sm,
+          0,
+        ),
         itemCount: photos.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 8),
+        separatorBuilder: (context, index) =>
+            const SizedBox(width: AppSpacing.xs),
         itemBuilder: (context, i) {
           final isSelected = i == selected;
           return GestureDetector(
@@ -225,7 +238,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             color: AppColors.primaryGreen,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.sm),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -235,8 +248,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               icon: Icons.star,
               iconColor: AppColors.star,
               label:
-                  '${product.rating.toStringAsFixed(1)} '
-                  '(${formatCount(product.reviewCount)} ulasan)',
+                  '${product.rating.toStringAsFixed(1)} (${formatCount(product.reviewCount)} ulasan)',
             ),
             InfoChip(
               icon: Icons.location_on_outlined,
@@ -247,11 +259,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
         const _SectionDivider(),
         const _SectionTitle('Informasi Perajin'),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.sm),
         _buildSellerInfo(product),
         const _SectionDivider(),
         const _SectionTitle('Detail Produk'),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.sm),
         _DetailRow(
           icon: Icons.category_outlined,
           label: 'Kategori',
@@ -274,7 +286,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
         const _SectionDivider(),
         const _SectionTitle('Tentang Produk'),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.xs),
         Text(
           product.description,
           style: const TextStyle(fontSize: 14, height: 1.5, color: _muted),
@@ -283,9 +295,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  /// Data penjual diambil dari models/seller.dart lewat sellerId.
-  /// Kalau id-nya belum ada di sana, dipakai data cadangan di Product
-  /// (inisial nama, tanpa tombol Lihat Profil).
   Widget _buildSellerInfo(Product product) {
     final seller = _findSellerById(product.sellerId);
     final name = seller?.name ?? product.sellerName;
@@ -302,7 +311,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 : _InitialAvatar(name: name),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,11 +340,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ),
         if (seller != null) ...[
-          const SizedBox(width: 8),
-          PillButton(
-            icon: Icons.storefront_outlined,
-            label: 'Lihat Profil',
-            onTap: () => _openSellerProfile(seller),
+          const SizedBox(width: AppSpacing.xs),
+          OutlinedButton.icon(
+            onPressed: () => _openSellerProfile(seller),
+            icon: const Icon(Icons.storefront_outlined, size: 16),
+            label: const Text('Lihat Profil'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primaryGreen,
+              side: const BorderSide(color: AppColors.primaryGreen),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
           ),
         ],
       ],
@@ -351,7 +367,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.sm,
+            AppSpacing.xs,
+            AppSpacing.sm,
+            AppSpacing.xs,
+          ),
           child: Row(
             children: [
               SizedBox(
@@ -372,7 +393,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: SizedBox(
                   height: 52,
@@ -486,7 +507,7 @@ class _SectionDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 16),
+      padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Divider(height: 1, color: _line),
     );
   }

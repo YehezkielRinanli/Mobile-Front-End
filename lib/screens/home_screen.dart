@@ -154,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    // Navigasi ke Halaman Profil milik Fadil jika tab Profil (indeks 3) ditekan
+    // Navigasi ke Halaman Profil Pengguna (Fadil) saat tab Profil (indeks 3) ditekan
     if (index == 3) {
       Navigator.push(
         context,
