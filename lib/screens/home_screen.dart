@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wheel_of_fortune/profile/profile_screen.dart';
 
 import '../models/seller.dart';
 import '../widgets/app_image.dart';
@@ -143,13 +144,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onNavigationSelected(int index) {
     if (index == _selectedNavigationIndex) {
-      if (index == 0) {
+      if (index == 0 && _scrollController.hasClients) {
         _scrollController.animateTo(
           0,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       }
+      return;
+    }
+
+    // Navigasi ke Halaman Profil milik Fadil jika tab Profil (indeks 3) ditekan
+    if (index == 3) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+      ).then((_) => setState(() => _selectedNavigationIndex = 0));
       return;
     }
 
@@ -167,15 +177,6 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const NotificationScreen()),
         ).then((_) => setState(() => _selectedNavigationIndex = 0));
-        break;
-      case 3:
-        if (dummySellers.isNotEmpty) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => SellerProfileScreen(seller: dummySellers.first),
-            ),
-          ).then((_) => setState(() => _selectedNavigationIndex = 0));
-        }
         break;
     }
   }
