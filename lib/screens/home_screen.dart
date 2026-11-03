@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wheel_of_fortune/profile/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,15 +13,26 @@ class _HomeScreenState extends State<HomeScreen> {
   final Color primaryGreen = const Color(0xFF2A5940);
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+// punya fadil
+  if (index == 3) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ProfileScreen(),
+      ),
+    );
+    return;
   }
 
+  setState(() {
+    _selectedIndex = index;
+  });
+}
+// punya fadil
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -118,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
           hintStyle: TextStyle(color: Colors.grey.shade500),
           prefixIcon: const Icon(Icons.search, color: Colors.grey),
           filled: true,
-          fillColor: Colors.grey.shade100,
+          fillColor: Theme.of(context).cardColor,
           contentPadding: const EdgeInsets.symmetric(vertical: 12.0),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12.0),
@@ -276,10 +288,10 @@ class SectionHeader extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           GestureDetector(
@@ -347,7 +359,7 @@ class ProductCard extends StatelessWidget {
       width: 150,
       margin: const EdgeInsets.symmetric(horizontal: 6.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
