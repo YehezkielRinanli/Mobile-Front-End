@@ -1,50 +1,76 @@
 import 'package:flutter/material.dart';
-import '../widgets/notification_tile_widget.dart';
+
+const Color craftOriginGreen = Color(0xFF204E38);
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Materi 4: Scaffold sebagai kerangka dasar antarmuka
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        title: const Text('Notifikasi', style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'Notifikasi',
-          style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
-          onPressed: () {},
-        ),
       ),
-      // Materi 1: Susunan dasar UI menggunakan ListView
+      // Pertemuan 6: ListView
       body: ListView(
-        children: const [
-          NotificationTileWidget(
-            title: 'Pesanan Berhasil Dibuat',
-            message: 'Pesanan Tas Rotan Anyaman Anda telah diterima dan sedang diproses oleh pengrajin Ibu Siti Aminah.',
-            time: 'Baru saja',
-            icon: Icons.check_circle_outline,
-            isUnread: true, // Notifikasi baru
+        children: [
+          _buildNotificationItem(
+            title: 'Pesanan Berhasil',
+            productName: 'Tas Rotan Anyaman',
+            artisanName: 'Ibu Siti Aminah',
+            icon: Icons.check_circle,
           ),
-          Divider(height: 1, color: Colors.black12),
-          NotificationTileWidget(
-            title: 'Promo Khusus Bumi Hijau',
-            message: 'Dapatkan diskon 10% untuk semua produk keramik lokal ramah lingkungan hari ini!',
-            time: '2 jam yang lalu',
-            icon: Icons.local_offer_outlined,
+          const Divider(height: 1),
+        ],
+      ),
+    );
+  }
+
+  // Komponen pembantu untuk list notifikasi
+  Widget _buildNotificationItem({
+    required String title,
+    required String productName,
+    required String artisanName,
+    required IconData icon,
+  }) {
+    return Padding(
+      // Pertemuan 5: Padding
+      padding: const EdgeInsets.all(16.0),
+      // Pertemuan 6: Row
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Pertemuan 3: Circle Avatar
+          CircleAvatar(
+            backgroundColor: craftOriginGreen.withOpacity(0.1),
+            child: Icon(icon, color: craftOriginGreen),
           ),
-          Divider(height: 1, color: Colors.black12),
-          NotificationTileWidget(
-            title: 'Pesanan Dikirim',
-            message: 'Pesanan Anyaman Bambu Anda telah diserahkan kepada kurir logistik.',
-            time: 'Kemarin',
-            icon: Icons.local_shipping_outlined,
+          const SizedBox(width: 16),
+          // Pertemuan 6: Expanded
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 4),
+                // Pertemuan 3: Rich Text (Menggabungkan teks biasa dengan teks tebal)
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                    children: [
+                      const TextSpan(text: 'Anda berhasil membeli produk '),
+                      TextSpan(text: productName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      const TextSpan(text: ' dari pengrajin '),
+                      TextSpan(text: artisanName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      const TextSpan(text: '.'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
