@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:wheel_of_fortune/profile/profile_screen.dart';
+import 'package:wheel_of_fortune/features/checkout/screens/checkout_screen.dart';
+import 'package:wheel_of_fortune/features/notification/screens/notification_screen.dart';
 
 import '../models/seller.dart';
 import '../widgets/app_image.dart';
@@ -92,8 +95,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final String query = _searchQuery.trim().toLowerCase();
 
     return _products.where((product) {
-      final bool matchesCategory = _selectedCategory == 'Semua' ||
-          product.category == _selectedCategory;
+      final bool matchesCategory =
+          _selectedCategory == 'Semua' || product.category == _selectedCategory;
       final String searchableText =
           '${product.name} ${product.category} ${product.artisan} ${product.location}'
               .toLowerCase();
@@ -143,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onNavigationSelected(int index) {
     if (index == _selectedNavigationIndex) {
-      if (index == 0) {
+      if (index == 0 && _scrollController.hasClients) {
         _scrollController.animateTo(
           0,
           duration: const Duration(milliseconds: 300),
@@ -153,29 +156,29 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    // Navigasi ke Halaman Profil Pengguna (Fadil) saat tab Profil (indeks 3) ditekan
+    if (index == 3) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+      ).then((_) => setState(() => _selectedNavigationIndex = 0));
+      return;
+    }
+
     setState(() => _selectedNavigationIndex = index);
 
     switch (index) {
       case 0:
         break;
       case 1:
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const ExploreScreen()),
-        ).then((_) => setState(() => _selectedNavigationIndex = 0));
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const ExploreScreen()))
+            .then((_) => setState(() => _selectedNavigationIndex = 0));
         break;
       case 2:
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const NotificationScreen()),
-        ).then((_) => setState(() => _selectedNavigationIndex = 0));
-        break;
-      case 3:
-        if (dummySellers.isNotEmpty) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => SellerProfileScreen(seller: dummySellers.first),
-            ),
-          ).then((_) => setState(() => _selectedNavigationIndex = 0));
-        }
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const CheckoutScreen()))
+            .then((_) => setState(() => _selectedNavigationIndex = 0));
         break;
     }
   }
@@ -271,18 +274,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   'PASAR KARYA LOKAL',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                        letterSpacing: 1.1,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    color: colors.onSurfaceVariant,
+                    letterSpacing: 1.1,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'CraftOrigin',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: colors.primary,
-                        fontSize: 23,
-                      ),
+                  style: Theme.of(context).textTheme.titleLarge
+                      ?.copyWith(color: colors.primary, fontSize: 23),
                 ),
               ],
             ),
@@ -355,7 +356,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildRecommendations() {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final List<CraftProduct> visibleProducts = _visibleProducts;
-    final List<String> filters = ['Semua', ..._categories.map((item) => item.label)];
+    final List<String> filters = [
+      'Semua',
+      ..._categories.map((item) => item.label),
+    ];
 
     return Column(
       key: _recommendationsKey,
@@ -366,9 +370,8 @@ class _HomeScreenState extends State<HomeScreen> {
           subtitle: 'Pilihan karya dengan sentuhan autentik',
           actionLabel: 'Lihat Semua',
           onTapAction: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ExploreScreen()),
-            );
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const ExploreScreen()));
           },
         ),
         const SizedBox(height: 4),
@@ -385,7 +388,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 onSelected: (_) => setState(() => _selectedCategory = filter),
                 showCheckmark: false,
                 labelStyle: TextStyle(
-                  color: isSelected ? colors.onPrimary : colors.onSurfaceVariant,
+                  color: isSelected
+                      ? colors.onPrimary
+                      : colors.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
                 selectedColor: colors.primary,
@@ -405,7 +410,11 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Center(
               child: Column(
                 children: [
-                  Icon(Icons.search_off_rounded, size: 36, color: colors.outline),
+                  Icon(
+                    Icons.search_off_rounded,
+                    size: 36,
+                    color: colors.outline,
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     'Produk tidak ditemukan',
@@ -415,9 +424,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     'Coba kata kunci atau kategori lainnya.',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
+                    style: Theme.of(context).textTheme.bodyMedium
+                        ?.copyWith(color: colors.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -525,7 +533,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: colors.surface.withValues(alpha: 0.8),
                         borderRadius: BorderRadius.circular(20),
@@ -533,24 +544,25 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Text(
                         'SDG 8 · Pekerjaan Layak',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: colors.primary,
-                              fontWeight: FontWeight.w800,
-                            ),
+                          color: colors.primary,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 10),
                     Text(
                       'Belanja yang punya arti.',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: colors.onPrimaryContainer,
-                          ),
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(color: colors.onPrimaryContainer),
                     ),
                     const SizedBox(height: 5),
                     Text(
                       'Kenali karya, hargai keterampilan, dan dukung peluang ekonomi bagi perajin lokal.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: colors.onPrimaryContainer.withValues(alpha: 0.85),
-                          ),
+                        color: colors.onPrimaryContainer.withValues(
+                          alpha: 0.85,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -558,20 +570,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class NotificationScreen extends StatelessWidget {
-  const NotificationScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Notifikasi & Keranjang')),
-      body: const Center(
-        child: Text('Halaman Notifikasi / Keranjang'),
       ),
     );
   }
@@ -645,7 +643,11 @@ class HeroBannerCard extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
-                  colors: [Color(0xD9000000), Color(0x66000000), Color(0x00000000)],
+                  colors: [
+                    Color(0xD9000000),
+                    Color(0x66000000),
+                    Color(0x00000000),
+                  ],
                 ),
               ),
             ),
@@ -656,11 +658,16 @@ class HeroBannerCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.45)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.45),
+                      ),
                     ),
                     child: const Text(
                       'KARYA LOKAL, DAMPAK NYATA',
@@ -676,11 +683,11 @@ class HeroBannerCard extends StatelessWidget {
                   Text(
                     'Produk Lokal\nRamah Lingkungan',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontSize: 23,
-                          height: 1.15,
-                          fontWeight: FontWeight.w800,
-                        ),
+                      color: Colors.white,
+                      fontSize: 23,
+                      height: 1.15,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   FilledButton.tonalIcon(
@@ -688,7 +695,10 @@ class HeroBannerCard extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: colors.primary,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 9,
+                      ),
                       minimumSize: const Size(0, 40),
                     ),
                     icon: const Icon(Icons.shopping_bag_outlined, size: 17),
@@ -735,9 +745,8 @@ class SectionHeader extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: colors.onSurfaceVariant),
                 ),
               ],
             ),
@@ -816,10 +825,10 @@ class CategoryItem extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: colors.onSurface,
-                      fontWeight: FontWeight.w700,
-                      height: 1.15,
-                    ),
+                  color: colors.onSurface,
+                  fontWeight: FontWeight.w700,
+                  height: 1.15,
+                ),
               ),
             ],
           ),
@@ -856,7 +865,9 @@ class ProductCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.55)),
+          side: BorderSide(
+            color: colors.outlineVariant.withValues(alpha: 0.55),
+          ),
         ),
         child: InkWell(
           onTap: onTap,
@@ -873,7 +884,10 @@ class ProductCard extends StatelessWidget {
                       left: 9,
                       top: 9,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 5,
+                        ),
                         decoration: BoxDecoration(
                           color: colors.surface.withValues(alpha: 0.94),
                           borderRadius: BorderRadius.circular(30),
@@ -881,11 +895,16 @@ class ProductCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.eco_rounded, color: colors.primary, size: 12),
+                            Icon(
+                              Icons.eco_rounded,
+                              color: colors.primary,
+                              size: 12,
+                            ),
                             const SizedBox(width: 3),
                             Text(
                               'Pilihan lokal',
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
                                     color: colors.primary,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 9,
@@ -899,15 +918,23 @@ class ProductCard extends StatelessWidget {
                       top: 4,
                       right: 4,
                       child: IconButton.filledTonal(
-                        tooltip: isFavorite ? 'Hapus dari favorit' : 'Tambah ke favorit',
+                        tooltip: isFavorite
+                            ? 'Hapus dari favorit'
+                            : 'Tambah ke favorit',
                         onPressed: onFavoriteTap,
                         visualDensity: VisualDensity.compact,
                         style: IconButton.styleFrom(
-                          backgroundColor: colors.surface.withValues(alpha: 0.92),
-                          foregroundColor: isFavorite ? Colors.redAccent : colors.primary,
+                          backgroundColor: colors.surface.withValues(
+                            alpha: 0.92,
+                          ),
+                          foregroundColor: isFavorite
+                              ? Colors.redAccent
+                              : colors.primary,
                         ),
                         icon: Icon(
-                          isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          isFavorite
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
                           size: 18,
                         ),
                       ),
@@ -926,11 +953,11 @@ class ProductCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              fontSize: 9,
-                              letterSpacing: 0.5,
-                              color: colors.onSurfaceVariant,
-                              fontWeight: FontWeight.w800,
-                            ),
+                          fontSize: 9,
+                          letterSpacing: 0.5,
+                          color: colors.onSurfaceVariant,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -938,9 +965,9 @@ class ProductCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              height: 1.15,
-                            ),
+                          fontWeight: FontWeight.w700,
+                          height: 1.15,
+                        ),
                       ),
                       const Spacer(),
                       Text(
@@ -948,17 +975,15 @@ class ProductCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                              fontSize: 10,
-                            ),
+                          color: colors.onSurfaceVariant,
+                          fontSize: 10,
+                        ),
                       ),
                       const SizedBox(height: 5),
                       Text(
                         product.price,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: colors.primary,
-                              fontSize: 14,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(color: colors.primary, fontSize: 14),
                       ),
                     ],
                   ),
@@ -1006,11 +1031,7 @@ class ProductIllustration extends StatelessWidget {
 }
 
 class ArtisanCard extends StatelessWidget {
-  const ArtisanCard({
-    super.key,
-    required this.seller,
-    required this.onTap,
-  });
+  const ArtisanCard({super.key, required this.seller, required this.onTap});
 
   final Seller seller;
   final VoidCallback onTap;
@@ -1060,18 +1081,16 @@ class ArtisanCard extends StatelessWidget {
                         seller.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontSize: 14,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontSize: 14),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         seller.shopName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: colors.onSurfaceVariant),
                       ),
                       const SizedBox(height: 5),
                       Row(
@@ -1087,7 +1106,8 @@ class ArtisanCard extends StatelessWidget {
                               location,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
                                     color: colors.primary,
                                     fontWeight: FontWeight.w700,
                                   ),
