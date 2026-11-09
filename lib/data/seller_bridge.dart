@@ -48,7 +48,9 @@ Seller sellerForProduct(Product product) {
 
   if (team != null) {
     return Seller(
-      id: team.id,
+      // Id memakai sellerId milik produk (bukan id tim s1..s4), karena profil
+      // perajin di main memfilter katalog dengan: product.sellerId == seller.id.
+      id: product.sellerId,
       name: team.name,
       shopName: team.shopName,
       photo: team.photo,
