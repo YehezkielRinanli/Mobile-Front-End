@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-import 'screens/splash_screen.dart';
-import 'screens/home_screen.dart';
+import 'package:wheel_of_fortune/screens/splash_screen.dart';
 import 'theme/theme_controller.dart';
 
 Future<void> main() async {
@@ -38,7 +36,7 @@ class CraftOriginApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           themeMode: currentMode,
           theme: _buildLightTheme(),
-          darkTheme: _buildDarkTheme(),
+          darkTheme: _buildDarkTheme(), 
           builder: (context, child) {
             return MediaQuery.withClampedTextScaling(
               minScaleFactor: _minTextScale,

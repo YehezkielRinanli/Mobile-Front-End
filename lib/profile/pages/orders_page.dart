@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
-
 import '../../theme/app_colors.dart';
+import '../widgets/profile_colors.dart';
+import '../widgets/section_card.dart';
+import '../widgets/sub_page.dart';
 
+/// Daftar pesanan (halaman Pesanan Saya).
+/// Semua pesanan ditampilkan; status ditandai kotak berwarna.
+// StatefulWidget dipakai karena filter status harus bisa berubah.
 class OrdersPage extends StatefulWidget {
   const OrdersPage({super.key});
 
@@ -9,11 +14,11 @@ class OrdersPage extends StatefulWidget {
   State<OrdersPage> createState() => _OrdersPageState();
 }
 
-class _OrdersPageState extends State<OrdersPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  final List<String> _statuses = [
+class _OrdersPageState extends State<OrdersPage> {
+    // Filter status yang sedang dipilih.
+  String _selectedStatus = 'Semua';
+  
+  static const List<String> _statuses = [
     'Semua',
     'Belum Bayar',
     'Diproses',
@@ -22,7 +27,7 @@ class _OrdersPageState extends State<OrdersPage>
     'Dibatalkan',
   ];
 
-  final List<Map<String, dynamic>> _orders = [
+  static const List<Map<String, dynamic>> _orders = [
     {
       'id': 'CO-20261001',
       'name': 'Tas Anyaman Rotan Khas',
@@ -70,45 +75,15 @@ class _OrdersPageState extends State<OrdersPage>
     },
   ];
 
-  bool get _isDark =>
-      Theme.of(context).brightness == Brightness.dark;
-
-  Color get _textColor => _isDark
-      ? const Color(0xFFF1EFE9)
-      : AppColors.darkGreen;
-
-  Color get _secondaryColor =>
-      _isDark ? const Color(0xFFBEC8BE) : Colors.grey.shade600;
-
-  Color get _cardColor =>
-      _isDark ? Theme.of(context).cardColor : AppColors.card;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(
-      length: _statuses.length,
-      vsync: this,
-    );
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
   String _formatPrice(int price) {
     final value = price.toString();
     final result = StringBuffer();
-
     for (int i = 0; i < value.length; i++) {
       if (i > 0 && (value.length - i) % 3 == 0) {
         result.write('.');
       }
       result.write(value[i]);
     }
-
     return 'Rp$result';
   }
 
@@ -120,8 +95,6 @@ class _OrdersPageState extends State<OrdersPage>
         return Colors.blue;
       case 'Dikirim':
         return Colors.indigo;
-      case 'Selesai':
-        return AppColors.primaryGreen;
       case 'Dibatalkan':
         return AppColors.terracotta;
       default:
@@ -129,283 +102,138 @@ class _OrdersPageState extends State<OrdersPage>
     }
   }
 
-  List<Map<String, dynamic>> _getFilteredOrders(String status) {
-    if (status == 'Semua') {
-      return _orders;
-    }
-
-    return _orders
-        .where((order) => order['status'] == status)
-        .toList();
-  }
-
-  Widget _buildOrderCard(Map<String, dynamic> order) {
-    final status = order['status'] as String;
-    final statusColor = _statusColor(status);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _cardColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: _isDark
-              ? const Color(0xFF35463A)
-              : AppColors.cream,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.receipt_long_outlined,
-                size: 18,
-                color: _secondaryColor,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  order['id'] as String,
-                  style: TextStyle(
-                    color: _textColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              Text(
-                order['date'] as String,
-                style: TextStyle(
-                  color: _secondaryColor,
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Divider(color: _isDark ? const Color(0xFF35463A) : AppColors.cream),
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 68,
-                height: 68,
-                decoration: BoxDecoration(
-                  color: _isDark
-                      ? const Color(0xFF29382F)
-                      : AppColors.lightGreen,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  order['icon'] as IconData,
-                  size: 32,
-                  color: _isDark
-                      ? const Color(0xFFA8C9A5)
-                      : AppColors.primaryGreen,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      order['name'] as String,
-                      style: TextStyle(
-                        color: _textColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      order['seller'] as String,
-                      style: TextStyle(
-                        color: _secondaryColor,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 7),
-                    Text(
-                      _formatPrice(order['price'] as int),
-                      style: TextStyle(
-                        color: _isDark
-                            ? const Color(0xFFA8C9A5)
-                            : AppColors.primaryGreen,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Divider(color: _isDark ? const Color(0xFF35463A) : AppColors.cream),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    color: _isDark && status == 'Selesai'
-                        ? const Color(0xFFA8C9A5)
-                        : statusColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              if (status == 'Belum Bayar')
-                OutlinedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Fitur pembayaran belum terhubung.',
-                        ),
-                      ),
-                    );
-                  },
-                  child: const Text('Bayar'),
-                ),
-              if (status == 'Dikirim')
-                OutlinedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Fitur pelacakan belum terhubung.',
-                        ),
-                      ),
-                    );
-                  },
-                  child: const Text('Lacak Pesanan'),
-                ),
-              if (status == 'Selesai')
-                OutlinedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Terima kasih telah berbelanja!',
-                        ),
-                      ),
-                    );
-                  },
-                  child: const Text('Beli Lagi'),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOrderList(String status) {
-    final filteredOrders = _getFilteredOrders(status);
-
-    if (filteredOrders.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(30),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.receipt_long_outlined,
-                size: 54,
-                color: _secondaryColor,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Belum ada pesanan',
-                style: TextStyle(
-                  color: _textColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Pesanan dengan status "$status" akan muncul di sini.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: _secondaryColor,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: filteredOrders.length,
-      itemBuilder: (context, index) {
-        return _buildOrderCard(filteredOrders[index]);
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Pesanan Saya'),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
-        elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabAlignment: TabAlignment.start,
-          labelColor: _isDark
-              ? const Color(0xFFA8C9A5)
-              : AppColors.primaryGreen,
-          unselectedLabelColor: _isDark
-              ? const Color(0xFFBEC8BE)
-              : Colors.black87,
-          labelStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
+    final c = PColors.of(context);
+
+    // Daftar pesanan sesuai filter yang dipilih.
+    final orders = _selectedStatus == 'Semua'
+        ? _orders
+        : _orders.where((o) => o['status'] == _selectedStatus).toList();
+
+    return SubPage(
+      title: 'Pesanan Saya',
+      child: SectionCard(
+      child: Column(
+        children: [
+                    // Pilihan filter status: Container + GestureDetector.
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final status in _statuses)
+                // ===== M09 (User Interaction) - MULAI =====
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedStatus = status;
+                    });
+                  },
+                  // ===== M09 - SELESAI =====
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _selectedStatus == status
+                          ? c.primary
+                          : c.soft,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      status,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _selectedStatus == status
+                            ? c.onPrimary
+                            : c.heading,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
-          unselectedLabelStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.normal,
-          ),
-          indicatorColor: AppColors.primaryGreen,
-          indicatorWeight: 3,
-          indicatorSize: TabBarIndicatorSize.tab,
-          tabs: _statuses.map((status) {
-            return Tab(text: status);
-          }).toList(),
-        ),
+                    const SizedBox(height: 12),
+          if (orders.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                'Belum ada pesanan dengan status ini.',
+                style: TextStyle(color: c.secondary),
+              ),
+            ),
+          for (int i = 0; i < orders.length; i++) ...[
+            if (i > 0) Divider(color: c.border),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: c.soft,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(orders[i]['icon'] as IconData,
+                        color: c.primary),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          orders[i]['name'] as String,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: c.heading,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${orders[i]['seller']} • ${orders[i]['date']}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 12, color: c.secondary),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatPrice(orders[i]['price'] as int),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: c.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _statusColor(orders[i]['status'] as String)
+                          .withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      orders[i]['status'] as String,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: _statusColor(orders[i]['status'] as String),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: _statuses.map((status) {
-          return _buildOrderList(status);
-        }).toList(),
-      ),
-    );
+    ));
   }
 }
