@@ -51,10 +51,16 @@ class Product {
     this.photoCount = 1,
   });
 
+  /// Alamat dasar foto di folder aset (tanpa ekstensi).
   String get _base => 'assets/images/product_${imageName ?? id}';
-  String get image => photoCount > 1 ? '${_base}_1' : _base;
+
+  /// Foto utama, dipakai di kartu produk.
+  /// Kalau produk punya lebih dari satu foto, nama berkas bernomor (_1, _2, ...).
+  String get image => photoCount > 1 ? '${_base}_1.jpg' : '$_base.jpg';
+
+  /// Semua foto produk, dipakai untuk galeri di halaman detail.
   List<String> get photos {
-    if (photoCount <= 1) return [_base];
-    return List.generate(photoCount, (i) => '${_base}_${i + 1}');
+    if (photoCount <= 1) return ['$_base.jpg'];
+    return List.generate(photoCount, (i) => '${_base}_${i + 1}.jpg');
   }
 }

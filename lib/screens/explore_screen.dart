@@ -1,121 +1,53 @@
 import 'package:flutter/material.dart';
 
-import '../core/constants/app_spacing.dart';
 import '../data/product_data.dart';
 import '../models/product.dart';
-import '../theme/app_colors.dart';
-import '../widgets/product/product_grid.dart';
+import 'craft_category_bar.dart';
+import 'craft_components.dart';
+import 'craft_layout.dart';
+import 'craft_product_card.dart';
+import 'craft_theme.dart';
 import 'product_detail_screen.dart';
 
-const Color _text = Colors.black87;
-const Color _muted = Color(0xFF6B756F);
-const Color _line = Color(0xFFE0DBCF);
-
-enum _PriceFilter {
-  all('Semua harga'),
-  under100('Di bawah Rp 100.000'),
-  mid('Rp 100.000 - Rp 300.000'),
-  over300('Di atas Rp 300.000');
-
-  final String label;
-  const _PriceFilter(this.label);
-
-  bool matches(int price) {
-    switch (this) {
-      case _PriceFilter.all:
-        return true;
-      case _PriceFilter.under100:
-        return price < 100000;
-      case _PriceFilter.mid:
-        return price >= 100000 && price <= 300000;
-      case _PriceFilter.over300:
-        return price > 300000;
-    }
-  }
-}
-
-enum _SortOption {
-  relevance('Paling sesuai'),
-  cheapest('Harga terendah'),
-  priciest('Harga tertinggi'),
-  topRated('Rating tertinggi');
-
-  final String label;
-  const _SortOption(this.label);
-}
-
-/// Halaman Explore / Products: pencarian, filter, dan grid produk.
+/// Halaman Explore / Katalog Produk
+/// Tahap 1 (M01-M03): Basic UI Layout & Reusability
+/// Tahap 2 (M04-M05): Material Design 3 & Single-Child Layouts
+/// Tahap 3 (M06-M07): Multi-Child Layouts & Responsive UI
+///
+/// Susunan halaman: Column berisi banner SDG, baris kategori (ListView
+/// horizontal), dan grid produk (GridView) yang jumlah kolomnya mengikuti
+/// lebar layar lewat LayoutBuilder.
 class ExploreScreen extends StatefulWidget {
-  final ProductCategory? initialCategory;
-
-  const ExploreScreen({super.key, this.initialCategory});
+  const ExploreScreen({super.key});
 
   @override
   State<ExploreScreen> createState() => _ExploreScreenState();
 }
 
 class _ExploreScreenState extends State<ExploreScreen> {
-  static const String _allCategories = 'all';
+  ProductCategory? _selectedCategory;
 
-  final TextEditingController _searchController = TextEditingController();
-  String _query = '';
-  ProductCategory? _category;
-  _PriceFilter _price = _PriceFilter.all;
-  _SortOption _sort = _SortOption.relevance;
-
-  @override
-  void initState() {
-    super.initState();
-    _category = widget.initialCategory;
+  /// Produk yang ditampilkan: semua, atau hanya satu kategori.
+  List<Product> get _visibleProducts {
+    if (_selectedCategory == null) return sampleProducts;
+    return sampleProducts
+        .where((product) => product.category == _selectedCategory)
+        .toList();
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  List<Product> get _results {
-    final q = _query.trim().toLowerCase();
-
-    final list = sampleProducts.where((p) {
-      if (_category != null && p.category != _category) return false;
-      if (!_price.matches(p.price)) return false;
-      if (q.isEmpty) return true;
-      return p.name.toLowerCase().contains(q) ||
-          p.category.label.toLowerCase().contains(q) ||
-          p.location.toLowerCase().contains(q) ||
-          p.sellerName.toLowerCase().contains(q);
-    }).toList();
-
-    switch (_sort) {
-      case _SortOption.relevance:
-        break;
-      case _SortOption.cheapest:
-        list.sort((a, b) => a.price.compareTo(b.price));
-        break;
-      case _SortOption.priciest:
-        list.sort((a, b) => b.price.compareTo(a.price));
-        break;
-      case _SortOption.topRated:
-        list.sort((a, b) => b.rating.compareTo(a.rating));
-        break;
-    }
-    return list;
-  }
-
-  void _resetFilters() {
-    setState(() {
-      _searchController.clear();
-      _query = '';
-      _category = null;
-      _price = _PriceFilter.all;
-      _sort = _SortOption.relevance;
-    });
+  /// Hanya kategori yang punya produk, supaya tidak ada pilihan kosong.
+  List<ProductCategory> get _categoriesWithProducts {
+    return ProductCategory.values
+        .where(
+          (category) =>
+              sampleProducts.any((product) => product.category == category),
+        )
+        .toList();
   }
 
   void _openProduct(Product product) {
-    Navigator.of(context).push(
+    Navigator.push(
+      context,
       MaterialPageRoute(
         builder: (_) => ProductDetailScreen(productId: product.id),
       ),
@@ -124,227 +56,165 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final results = _results;
+    // Theme menerapkan CraftOrigin Visual System pada halaman ini.
+    // Builder diperlukan supaya Theme.of(context) di bawah membaca craftTheme.
+    return Theme(
+      data: craftTheme,
+      child: Builder(
+        builder: (context) {
+          final products = _visibleProducts;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildSearchBar(context),
-            _buildFilters(),
-            const SizedBox(height: AppSpacing.xs),
-            Expanded(
-              child: results.isEmpty
-                  ? _EmptyState(onReset: _resetFilters)
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.md,
-                        AppSpacing.xs,
-                        AppSpacing.md,
-                        AppSpacing.lg,
-                      ),
-                      child: ProductGrid(
-                        products: results,
-                        onProductTap: _openProduct,
-                      ),
-                    ),
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('CraftOrigin - Katalog Produk'),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSearchBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xs,
-        AppSpacing.sm,
-        AppSpacing.md,
-        AppSpacing.xs,
-      ),
-      child: Row(
-        children: [
-          if (Navigator.of(context).canPop())
-            IconButton(
-              tooltip: 'Kembali',
-              icon: const Icon(Icons.arrow_back, color: _text),
-              onPressed: () => Navigator.of(context).maybePop(),
-            )
-          else
-            const SizedBox(width: AppSpacing.xs),
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              onChanged: (value) => setState(() => _query = value),
-              textInputAction: TextInputAction.search,
-              style: const TextStyle(color: _text, fontSize: 14),
-              decoration: InputDecoration(
-                hintText: 'Cari produk, perajin, atau daerah...',
-                hintStyle: const TextStyle(color: _muted, fontSize: 14),
-                prefixIcon: const Icon(Icons.search, color: _muted),
-                suffixIcon: _query.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: 'Hapus pencarian',
-                        icon: const Icon(Icons.close, color: _muted, size: 18),
-                        onPressed: () => setState(() {
-                          _searchController.clear();
-                          _query = '';
-                        }),
-                      ),
-                filled: true,
-                fillColor: const Color(0xFFF0F2EE),
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+            body: Column(
+              children: [
+                const _SdgBanner(),
+                CategoryFilterBar(
+                  categories: _categoriesWithProducts,
+                  selected: _selectedCategory,
+                  onSelected: (category) {
+                    setState(() {
+                      _selectedCategory = category;
+                    });
+                  },
                 ),
-              ),
+                Expanded(
+                  child: products.isEmpty
+                      ? const _EmptyState()
+                      : _buildProductGrid(products),
+                ),
+              ],
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildFilters() {
-    return SizedBox(
-      height: 44,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-        children: [
-          _FilterPill<String>(
-            label: _category?.label ?? 'Kategori',
-            active: _category != null,
-            values: [
-              _allCategories,
-              ...ProductCategory.values.map((c) => c.name),
-            ],
-            labelOf: (v) => v == _allCategories
-                ? 'Semua kategori'
-                : ProductCategory.values.byName(v).label,
-            onSelected: (v) => setState(() {
-              _category = v == _allCategories
-                  ? null
-                  : ProductCategory.values.byName(v);
-            }),
+  /// Grid responsif. LayoutBuilder memberi lebar area yang tersedia, dari
+  /// situ dihitung jumlah kolom dan tinggi tiap kartu sehingga isi kartu
+  /// selalu muat (tanpa overflow) di ukuran layar apa pun.
+  Widget _buildProductGrid(List<Product> products) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const horizontalPadding = CraftSpacing.lg;
+        const gap = CraftSpacing.md;
+
+        final columns = gridColumnsFor(constraints.maxWidth);
+        final cellWidth = (constraints.maxWidth -
+                horizontalPadding * 2 -
+                gap * (columns - 1)) /
+            columns;
+        // Tinggi kartu = foto persegi (selebar kartu) + area teks.
+        final cardHeight = cellWidth + cardInfoHeight(context);
+
+        return GridView.builder(
+          padding: const EdgeInsets.fromLTRB(
+            horizontalPadding,
+            CraftSpacing.sm,
+            horizontalPadding,
+            CraftSpacing.xl,
           ),
-          const SizedBox(width: AppSpacing.xs),
-          _FilterPill<_PriceFilter>(
-            label: _price == _PriceFilter.all ? 'Harga' : _price.label,
-            active: _price != _PriceFilter.all,
-            values: _PriceFilter.values,
-            labelOf: (v) => v.label,
-            onSelected: (v) => setState(() => _price = v),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: gap,
+            mainAxisSpacing: gap,
+            mainAxisExtent: cardHeight,
           ),
-          const SizedBox(width: AppSpacing.xs),
-          _FilterPill<_SortOption>(
-            label: _sort == _SortOption.relevance ? 'Urutkan' : _sort.label,
-            active: _sort != _SortOption.relevance,
-            values: _SortOption.values,
-            labelOf: (v) => v.label,
-            onSelected: (v) => setState(() => _sort = v),
-          ),
-        ],
-      ),
+          itemCount: products.length,
+          itemBuilder: (context, index) {
+            final product = products[index];
+            return CraftProductCard(
+              product: product,
+              onTap: () => _openProduct(product),
+            );
+          },
+        );
+      },
     );
   }
 }
 
-class _FilterPill<T> extends StatelessWidget {
-  final String label;
-  final bool active;
-  final List<T> values;
-  final String Function(T) labelOf;
-  final ValueChanged<T> onSelected;
-
-  const _FilterPill({
-    required this.label,
-    required this.active,
-    required this.values,
-    required this.labelOf,
-    required this.onSelected,
-  });
+/// Banner pembuka: pesan SDG dan dua badge. Row dengan Expanded membuat
+/// teks mengisi sisa lebar dan turun baris jika layar sempit.
+class _SdgBanner extends StatelessWidget {
+  const _SdgBanner();
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<T>(
-      tooltip: label,
-      position: PopupMenuPosition.under,
-      onSelected: onSelected,
-      itemBuilder: (context) => [
-        for (final v in values)
-          PopupMenuItem<T>(value: v, child: Text(labelOf(v))),
-      ],
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: active ? AppColors.lightGreen : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: active ? AppColors.primaryGreen : _line,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: active ? AppColors.primaryGreen : _text,
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(
+        CraftSpacing.lg,
+        CraftSpacing.md,
+        CraftSpacing.lg,
+        0,
+      ),
+      padding: const EdgeInsets.all(CraftSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(CraftRadius.md),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.eco, color: colorScheme.onPrimaryContainer),
+          const SizedBox(width: CraftSpacing.md),
+          Expanded(
+            child: Text(
+              'Produk perajin ramah lingkungan. Mendukung SDG 8 (Pekerjaan Layak) dan SDG 12 (Konsumsi Bertanggung Jawab).',
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onPrimaryContainer,
               ),
             ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.keyboard_arrow_down,
-              size: 18,
-              color: active ? AppColors.primaryGreen : _muted,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: CraftSpacing.md),
+          const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SdgBadge(label: 'SDG 8'),
+              SizedBox(height: CraftSpacing.xs),
+              SdgBadge(label: 'SDG 12'),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
 class _EmptyState extends StatelessWidget {
-  final VoidCallback onReset;
-
-  const _EmptyState({required this.onReset});
+  const _EmptyState();
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.all(CraftSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.search_off, size: 48, color: _muted),
-            const SizedBox(height: AppSpacing.sm),
-            const Text(
-              'Produk tidak ditemukan',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: _text,
-              ),
+            Icon(
+              Icons.search_off,
+              size: 48,
+              color: colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: AppSpacing.xs / 2),
-            const Text(
-              'Coba ubah kata kunci atau filter yang dipakai.',
+            const SizedBox(height: CraftSpacing.md),
+            Text('Belum ada produk', style: textTheme.titleMedium),
+            const SizedBox(height: CraftSpacing.xs),
+            Text(
+              'Produk untuk kategori ini belum tersedia.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: _muted),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            TextButton(
-              onPressed: onReset,
-              child: const Text('Reset filter'),
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
