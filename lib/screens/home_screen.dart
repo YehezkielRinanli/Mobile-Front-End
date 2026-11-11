@@ -7,6 +7,7 @@ import '../models/seller.dart';
 import '../widgets/app_image.dart';
 import 'explore_screen.dart';
 import 'seller_profile_screen.dart';
+import 'seller_catalog_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -111,18 +112,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-          showCloseIcon: true,
-        ),
-      );
   }
 
   void _goToRecommendations() {
@@ -474,7 +463,11 @@ class _HomeScreenState extends State<HomeScreen> {
           title: 'Kenali Perajinnya',
           subtitle: 'Cerita di balik karya yang kamu pilih',
           actionLabel: 'Lihat Semua',
-          onTapAction: () => _showMessage('Menampilkan perajin pilihan.'),
+          onTapAction: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SellerCatalogScreen()),
+            );
+          },
         ),
         const SizedBox(height: 8),
         SizedBox(
