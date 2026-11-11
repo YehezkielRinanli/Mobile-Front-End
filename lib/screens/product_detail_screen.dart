@@ -30,19 +30,12 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  bool _isFavorite = false;
   int _photoIndex = 0;
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  void _toggleFavorite() {
-    setState(() {
-      _isFavorite = !_isFavorite;
-    });
   }
 
   /// Gerbang ke halaman Profil Perajin (dikerjakan anggota tim lain).
@@ -96,8 +89,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               _photoIndex = index;
                             });
                           },
-                          isFavorite: _isFavorite,
-                          onToggleFavorite: _toggleFavorite,
                           onShare: () =>
                               _showMessage('Fitur bagikan belum tersedia'),
                           onBack: () => Navigator.of(context).maybePop(),
@@ -272,7 +263,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  /// Bar bawah: tombol favorit (kotak) dan tombol Keranjang (memanjang).
+  /// Bar bawah: tombol Keranjang selebar layar.
   Widget _buildBottomBar(BuildContext context, Product product) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -282,34 +273,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         color: colorScheme.surfaceContainerLowest,
         border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
       ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 52,
-            height: 52,
-            child: OutlinedButton(
-              onPressed: _toggleFavorite,
-              style: OutlinedButton.styleFrom(padding: EdgeInsets.zero),
-              child: Icon(
-                _isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: _isFavorite ? colorScheme.error : colorScheme.onSurface,
-              ),
-            ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 52,
+        child: FilledButton.icon(
+          onPressed: () => _showMessage(
+            '"${product.name}" ditambahkan ke keranjang',
           ),
-          const SizedBox(width: CraftSpacing.md),
-          Expanded(
-            child: SizedBox(
-              height: 52,
-              child: FilledButton.icon(
-                onPressed: () => _showMessage(
-                  '"${product.name}" ditambahkan ke keranjang',
-                ),
-                icon: const Icon(Icons.add),
-                label: const Text('Keranjang'),
-              ),
-            ),
-          ),
-        ],
+          icon: const Icon(Icons.add),
+          label: const Text('Keranjang'),
+        ),
       ),
     );
   }

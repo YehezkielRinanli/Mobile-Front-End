@@ -5,14 +5,12 @@ import 'craft_theme.dart';
 /// Custom Reusable Widget: galeri foto produk (Tahap 3).
 ///
 /// Foto besar bersudut membulat. Di atasnya (Stack) ada tombol kembali,
-/// bagikan, favorit, dan penanda halaman "1/4". Di bawahnya ada deretan
+/// bagikan, dan penanda halaman "1/4". Di bawahnya ada deretan
 /// thumbnail yang bisa digeser (ListView horizontal).
 class ProductPhotoGallery extends StatelessWidget {
   final List<String> photos;
   final int selectedIndex;
   final ValueChanged<int> onSelect;
-  final bool isFavorite;
-  final VoidCallback onToggleFavorite;
   final VoidCallback onShare;
   final VoidCallback onBack;
 
@@ -21,8 +19,6 @@ class ProductPhotoGallery extends StatelessWidget {
     required this.photos,
     required this.selectedIndex,
     required this.onSelect,
-    required this.isFavorite,
-    required this.onToggleFavorite,
     required this.onShare,
     required this.onBack,
   });
@@ -59,24 +55,10 @@ class ProductPhotoGallery extends StatelessWidget {
                 Positioned(
                   top: CraftSpacing.md,
                   right: CraftSpacing.md,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _CircleIconButton(
-                        icon: Icons.share_outlined,
-                        label: 'Bagikan',
-                        onTap: onShare,
-                      ),
-                      const SizedBox(width: CraftSpacing.sm),
-                      _CircleIconButton(
-                        icon: isFavorite
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        label: 'Favorit',
-                        color: isFavorite ? colorScheme.error : null,
-                        onTap: onToggleFavorite,
-                      ),
-                    ],
+                  child: _CircleIconButton(
+                    icon: Icons.share_outlined,
+                    label: 'Bagikan',
+                    onTap: onShare,
                   ),
                 ),
                 if (photos.length > 1)
@@ -174,13 +156,11 @@ class _CircleIconButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final Color? color;
 
   const _CircleIconButton({
     required this.icon,
     required this.label,
     required this.onTap,
-    this.color,
   });
 
   @override
@@ -199,7 +179,7 @@ class _CircleIconButton extends StatelessWidget {
             color: colorScheme.surfaceContainerLowest,
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, size: 20, color: color ?? colorScheme.onSurface),
+          child: Icon(icon, size: 20, color: colorScheme.onSurface),
         ),
       ),
     );
